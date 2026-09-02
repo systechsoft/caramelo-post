@@ -1212,17 +1212,58 @@ function isIOS() {
 
 function updateSaveHint() {
   const hint = document.getElementById('saveHint');
-  hint.textContent = "La imagen se descarga sola a tu carpeta de Descargas o Galería. Si tu navegador no la descarga automáticamente, mantené presionada la imagen de arriba y elegí \"Descargar imagen\".";
+  hint.textContent = "Se abre el selector para guardar/compartir la imagen. Si no aparece nada, mantené presionada la imagen de arriba y elegí \"Guardar imagen\".";
+}
+
+function showToast(msg) {
+  let t = document.getElementById('toastMsg');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toastMsg';
+    t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1db954;color:white;padding:12px 20px;border-radius:30px;font-family:Poppins,sans-serif;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:90vw;text-align:center;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => { t.style.display = 'none'; }, 3500);
 }
 
 function triggerDownload(canvas, filename) {
-  const dataUrl = canvas.toDataURL('image/png');
+  try {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        showFatalError('No se pudo generar la imagen (blob vacío).');
+        return;
+      }
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: filename }).then(() => {
+          showToast('✅ Imagen lista');
+        }).catch((err) => {
+          // user cancelled the share sheet, or share failed — try plain download next
+          if (err && err.name === 'AbortError') return; // user just closed the sheet, not an error
+          fallbackAnchorDownload(blob, filename);
+        });
+      } else {
+        fallbackAnchorDownload(blob, filename);
+      }
+    }, 'image/png');
+  } catch (err) {
+    showFatalError('al descargar: ' + err.message);
+  }
+}
+
+function fallbackAnchorDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.download = filename;
-  link.href = dataUrl;
+  link.href = url;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  showToast('✅ Imagen descargada');
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
 }
 
 // ---------- Safe render wrapper + live auto-update (debounced) ----------
@@ -1805,18 +1846,59 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   }
   function updateAnSaveHint() {
     const hint = document.getElementById('anSaveHint');
-    hint.textContent = 'La imagen se descarga sola. Si tu navegador no la descarga automáticamente, mantené presionada la imagen de arriba y elegí "Descargar imagen".';
+    hint.textContent = 'Se abre el selector para guardar/compartir la imagen. Si no aparece nada, mantené presionada la imagen de arriba y elegí "Guardar imagen".';
+  }
+
+  function anShowToast(msg) {
+    let t = document.getElementById('toastMsg');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toastMsg';
+      t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1db954;color:white;padding:12px 20px;border-radius:30px;font-family:Poppins,sans-serif;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);max-width:90vw;text-align:center;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(() => { t.style.display = 'none'; }, 3500);
   }
 
   function triggerAnDownload() {
     const canvas = document.getElementById('anWorkCanvas');
-    const dataUrl = canvas.toDataURL('image/png');
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          showFatalError('No se pudo generar la imagen (blob vacío).');
+          return;
+        }
+        const filename = 'anuncio_caramelo.png';
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: filename }).then(() => {
+            anShowToast('✅ Imagen lista');
+          }).catch((err) => {
+            if (err && err.name === 'AbortError') return;
+            anFallbackAnchorDownload(blob, filename);
+          });
+        } else {
+          anFallbackAnchorDownload(blob, filename);
+        }
+      }, 'image/png');
+    } catch (err) {
+      showFatalError('al descargar: ' + err.message);
+    }
+  }
+
+  function anFallbackAnchorDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = 'anuncio_caramelo.png';
-    link.href = dataUrl;
+    link.download = filename;
+    link.href = url;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    anShowToast('✅ Imagen descargada');
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
   }
 
   document.getElementById('anDownloadBtn').addEventListener('click', () => {
