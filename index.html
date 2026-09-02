@@ -327,6 +327,16 @@
     <button class="add-row-btn" id="addRowBtn">+ Agregar destino</button>
   </div>
 
+  <div class="card">
+    <h2><span class="num">5</span> Tamaño del pie de página</h2>
+    <div class="hint">Ajustá el tamaño de los íconos y el texto de Instagram/WhatsApp abajo de la pieza.</div>
+    <div class="el-controls">
+      <div class="sizebtn" id="cronoFooterMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
+      <div class="sizebtn" id="cronoFooterPlus">+</div>
+    </div>
+  </div>
+
   <button class="generate-btn" id="generateBtn">GENERAR PIEZA</button>
   <div class="loading" id="loadingMsg">Generando imagen...</div>
 
@@ -490,6 +500,16 @@ TODO INCLUIDO</textarea>
     </div>
   </div>
 
+  <div class="card">
+    <h2><span class="num">10</span> Tamaño del pie de página</h2>
+    <div class="hint">El pie (Instagram/WhatsApp) queda siempre fijo abajo, pero podés agrandar o achicar el ícono y el texto.</div>
+    <div class="el-controls">
+      <div class="sizebtn" id="anFooterMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
+      <div class="sizebtn" id="anFooterPlus">+</div>
+    </div>
+  </div>
+
   <button class="generate-btn" id="anGenerateBtn">GENERAR ANUNCIO</button>
   <div class="loading" id="anLoadingMsg">Generando imagen...</div>
 
@@ -551,6 +571,7 @@ let rows = [
   { fecha: "DOM 06", destino: "Parque Dunas", ref: "50" },
 ];
 let columns = 1;
+let footerScale = 1;
 
 // Font loading with a hard timeout fallback so the app never hangs forever
 // waiting on a network request (e.g. if Google Fonts is blocked).
@@ -719,6 +740,16 @@ document.querySelectorAll('.presets button').forEach(btn => {
   });
 });
 document.getElementById('titleInput').addEventListener('input', () => scheduleRender());
+
+// ---------- Footer size controls ----------
+document.getElementById('cronoFooterMinus').addEventListener('click', () => {
+  footerScale = Math.max(0.7, footerScale - 0.1);
+  scheduleRender();
+});
+document.getElementById('cronoFooterPlus').addEventListener('click', () => {
+  footerScale = Math.min(1.8, footerScale + 0.1);
+  scheduleRender();
+});
 
 // ---------- Format toggle (post vs reel) ----------
 const cronoFormatPost = document.getElementById('cronoFormatPost');
@@ -995,7 +1026,7 @@ async function renderPiece() {
   ctx.fillText("INVERSIÓN", W-55-45, headerY0+headerH/2);
 
   // Panel + rows
-  const footerH = 90;
+  const footerH = 90 * footerScale;
   const footerTop = H - 40 - footerH;
   const panelY0 = headerY0 + headerH + 6;
   const availableH = footerTop - panelY0 - 20;
@@ -1113,17 +1144,17 @@ async function renderPiece() {
   roundRect(ctx, 55, footerTop, W-110, footerH, footerH/2);
   ctx.fill();
   const footerCy = footerTop + footerH/2;
-  const iconSize = 52;
+  const iconSize = 52 * footerScale;
 
   const igH = iconSize * (igImg.height/igImg.width);
   ctx.drawImage(igImg, 90, footerCy - igH/2, iconSize, igH);
-  ctx.font = `400 27px MyriadTilt`;
+  ctx.font = `400 ${27*footerScale}px MyriadTilt`;
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "left";
   ctx.fillText("@caramelotoursoficial", 90+iconSize+16, footerCy);
 
   const waText = "(0424)2511630";
-  ctx.font = `400 27px MyriadTilt`;
+  ctx.font = `400 ${27*footerScale}px MyriadTilt`;
   const waTextW = ctx.measureText(waText).width;
   const waH = iconSize * (waImg.height/waImg.width);
   const waX = W - 90 - waTextW - 16 - iconSize;
@@ -1231,6 +1262,7 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   const DEFAULT_PHOTO = JSON.parse(JSON.stringify(photoState));
 
   let photoLocked = false;
+  let anFooterScale = 1;
 
   // ---------- DOM refs ----------
   const elLogo = document.getElementById('elLogo');
@@ -1466,6 +1498,16 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   attachGesture(elPriceBadge, els.price, { minScale: 0.4, maxScale: 3 });
   attachGesture(elDateBadge, els.date, { minScale: 0.4, maxScale: 3 });
 
+  // ---------- footer size controls ----------
+  document.getElementById('anFooterMinus').addEventListener('click', () => {
+    anFooterScale = Math.max(0.7, anFooterScale - 0.1);
+    scheduleAnRender();
+  });
+  document.getElementById('anFooterPlus').addEventListener('click', () => {
+    anFooterScale = Math.min(1.8, anFooterScale + 0.1);
+    scheduleAnRender();
+  });
+
   // ---------- lock toggle (photo only) ----------
   const anLockBtn = document.getElementById('anLockBtn');
   anLockBtn.addEventListener('click', () => {
@@ -1653,8 +1695,8 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     if (els.price.visible !== false && els.price.text.trim()) drawBadge(els.price);
     if (els.date.visible !== false && els.date.text.trim()) drawBadge(els.date);
 
-    // footer (fixed)
-    const footerH = 90 * (canvasW/AW);
+    // footer (fixed position, adjustable size)
+    const footerH = 90 * (canvasW/AW) * anFooterScale;
     const margin = 55 * (canvasW/AW);
     const bottomGap = 40 * (canvasW/AW);
     const footerTop = canvasH - bottomGap - footerH;
@@ -1662,10 +1704,10 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     roundRectPath(ctx, margin, footerTop, canvasW-2*margin, footerH, footerH/2);
     ctx.fill();
     const footerCy = footerTop + footerH/2;
-    const iconSize = 52 * (canvasW/AW);
+    const iconSize = 52 * (canvasW/AW) * anFooterScale;
     const igH = iconSize*(igImg.height/igImg.width);
     ctx.drawImage(igImg, margin+35*(canvasW/AW), footerCy-igH/2, iconSize, igH);
-    ctx.font = anFont('MyriadTilt', 400, 27*(canvasW/AW));
+    ctx.font = anFont('MyriadTilt', 400, 27*(canvasW/AW)*anFooterScale);
     ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left'; ctx.textBaseline='middle';
     ctx.fillText('@caramelotoursoficial', margin+35*(canvasW/AW)+iconSize+16*(canvasW/AW), footerCy);
 
