@@ -18,13 +18,49 @@
     font-display: swap;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg-grad-top: #0d2740;
+    --bg-grad-bottom: #0a1830;
+    --text-main: #ffffff;
+    --card-bg: rgba(255,255,255,0.06);
+    --card-border: rgba(255,255,255,0.12);
+    --input-bg: rgba(0,0,0,0.25);
+    --input-border: rgba(255,255,255,0.18);
+    --hint-color: #ffffff;
+    --stage-bg: #1a2a3a;
+  }
+  body[data-theme="light"] {
+    --bg-grad-top: #eef3f8;
+    --bg-grad-bottom: #dfe8f0;
+    --text-main: #16202b;
+    --card-bg: rgba(255,255,255,0.75);
+    --card-border: rgba(20,30,40,0.12);
+    --input-bg: rgba(255,255,255,0.9);
+    --input-border: rgba(20,30,40,0.18);
+    --hint-color: #16202b;
+  }
   body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(180deg, #0d2740 0%, #0a1830 100%);
-    color: #fff;
+    background: linear-gradient(180deg, var(--bg-grad-top) 0%, var(--bg-grad-bottom) 100%);
+    color: var(--text-main);
     min-height: 100vh;
     padding-bottom: 40px;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+  .theme-toggle {
+    position: fixed;
+    top: 14px; right: 14px;
+    z-index: 50;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    backdrop-filter: blur(6px);
+    color: var(--text-main);
+    font-size: 19px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
   }
   header { padding: 18px 18px 4px; text-align: center; }
   header img.logo { width: 130px; height: auto; display:block; margin: 0 auto 6px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
@@ -36,7 +72,7 @@
     color: #ff2e9a;
     text-shadow: 2px 2px 0 #0a1830;
   }
-  header p { margin: 0; font-size: 12px; opacity: 0.7; }
+  header p { margin: 0; font-size: 14px; opacity: 0.75; }
 
   /* Tab bar */
   .tabbar {
@@ -50,9 +86,9 @@
     flex: 1;
     padding: 12px 6px;
     border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(255,255,255,0.06);
-    color: white;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text-main);
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
     font-size: 13px;
@@ -65,8 +101,8 @@
 
   .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px; }
   .card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 16px;
     margin: 16px 0;
@@ -90,14 +126,14 @@
     font-size: 12px;
     font-weight: 800;
   }
-  label { display: block; font-size: 12px; opacity: 0.8; margin: 10px 0 5px; }
+  label { display: block; font-size: 14px; opacity: 0.85; margin: 10px 0 5px; font-weight:600; }
   input[type=text], select {
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(0,0,0,0.25);
-    color: white;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-main);
     font-family: 'Poppins', sans-serif;
     font-size: 14px;
     outline: none;
@@ -105,8 +141,8 @@
   input[type=text]:focus, select:focus { border-color: #ff2e9a; }
   textarea.paste-box {
     width: 100%; min-height: 110px; padding: 10px 12px; border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.25);
-    color: white; font-family: 'Poppins', sans-serif; font-size: 13px; outline: none; resize: vertical;
+    border: 1px solid var(--input-border); background: var(--input-bg);
+    color: var(--text-main); font-family: 'Poppins', sans-serif; font-size: 13px; outline: none; resize: vertical;
   }
   .parse-btn, .add-row-btn {
     width: 100%; padding: 11px; border-radius: 10px; border: none;
@@ -114,15 +150,15 @@
     font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 8px;
   }
   .add-row-btn { background: transparent; border: 1px dashed rgba(255,255,255,0.3); }
-  .divider-or { text-align: center; font-size: 11px; opacity: 0.5; margin: 14px 0; display: flex; align-items: center; gap: 10px; }
+  .divider-or { text-align: center; font-size: 13px; opacity: 0.55; margin: 14px 0; display: flex; align-items: center; gap: 10px; }
   .divider-or::before, .divider-or::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
 
   .photo-drop {
-    border: 2px dashed rgba(255,255,255,0.25); border-radius: 12px; padding: 18px;
+    border: 2px dashed var(--input-border); border-radius: 12px; padding: 18px;
     text-align: center; cursor: pointer; position: relative; overflow: hidden;
     min-height: 90px; display: flex; align-items: center; justify-content: center;
   }
-  .photo-drop span { font-size: 13px; opacity: 0.8; background: rgba(0,0,0,0.55); padding: 6px 12px; border-radius: 20px; }
+  .photo-drop span { font-size: 15px; opacity: 0.85; background: rgba(0,0,0,0.55); padding: 6px 12px; border-radius: 20px; }
   .photo-drop input { position:absolute; inset:0; opacity:0; cursor:pointer; }
 
   .row-item { display: grid; grid-template-columns: 1fr 1fr 60px 30px; gap: 6px; margin-bottom: 8px; align-items: center; }
@@ -134,8 +170,8 @@
 
   .format-toggle { display: flex; gap: 8px; margin-top: 8px; }
   .format-toggle button {
-    flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(0,0,0,0.25); color: white; font-family: 'Poppins',sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text-main); font-family: 'Poppins',sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer;
   }
   .format-toggle button.active { background: #ff2e9a; border-color: #ff2e9a; }
 
@@ -153,13 +189,13 @@
     display: inline-block; margin-top: 14px; padding: 12px 22px; background: #1db954; color: white;
     border-radius: 30px; text-decoration: none; font-weight: 700; font-size: 14px; border: none; cursor: pointer;
   }
-  .hint { font-size: 11.5px; opacity: 0.6; margin-top: 8px; line-height: 1.4; }
+  .hint { font-size: 13.5px; opacity: 0.68; margin-top: 8px; line-height: 1.45; color: var(--hint-color); }
   .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .presets button {
-    padding: 7px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.05); color: white; font-size: 12px; cursor: pointer;
+    padding: 7px 12px; border-radius: 20px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text-main); font-size: 13px; cursor: pointer;
   }
-  .loading { display:none; font-size:12px; opacity:0.7; margin-top:8px; }
+  .loading { display:none; font-size:14px; opacity:0.75; margin-top:8px; }
 
   /* ===== Anuncios Especiales — editor stage ===== */
   .stage-wrap { display:flex; justify-content:center; margin: 10px 0; }
@@ -168,7 +204,7 @@
     width: 100%;
     max-width: 460px;
     aspect-ratio: 1080 / 1440;
-    background: #1a2a3a;
+    background: var(--stage-bg);
     border-radius: 14px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.15);
@@ -206,16 +242,16 @@
 
   .anuncios-toolbar { display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0; }
   .anuncios-toolbar button {
-    padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.06); color:white; font-size:12px; font-weight:600; cursor:pointer;
+    padding: 9px 12px; border-radius: 10px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer;
   }
   .anuncios-toolbar button.active { background:#ff2e9a; border-color:#ff2e9a; }
   .anuncios-toolbar button.lock-on { background:#1db954; border-color:#1db954; }
 
   .el-controls { display:flex; align-items:center; gap:8px; margin-top:10px; }
   .el-controls .sizebtn {
-    width:34px; height:34px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);
-    background:rgba(0,0,0,0.25); color:white; font-size:18px; font-weight:700; cursor:pointer;
+    width:34px; height:34px; border-radius:8px; border:1px solid var(--input-border);
+    background:var(--input-bg); color:var(--text-main); font-size:18px; font-weight:700; cursor:pointer;
   }
   .el-controls select { flex:1; }
   .colorswatch { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
@@ -230,6 +266,8 @@
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="themeToggle" title="Cambiar tema">🌙</button>
 
 <header>
   <img class="logo" id="brandLogo" alt="Caramelo Tours">
@@ -329,9 +367,10 @@
   <div class="card">
     <h2><span class="num">3</span> Diseño (arrastrá y pellizcá cada elemento)</h2>
     <div class="anuncios-toolbar">
-      <button type="button" id="anLockBtn">🔓 Bloquear todo</button>
+      <button type="button" id="anLockBtn">🔓 Bloquear foto</button>
       <button type="button" id="anResetBtn">↺ Reiniciar posiciones</button>
     </div>
+    <div class="hint">El bloqueo aplica solo a la foto de fondo. El logo, el slogan y los textos siempre se pueden mover.</div>
     <div class="stage-wrap">
       <div class="stage" id="anStage">
         <div class="stage-inner" id="anInner">
@@ -351,21 +390,31 @@ TODO INCLUIDO</div>
   </div>
 
   <div class="card">
-    <h2><span class="num">4</span> Título línea 1</h2>
+    <h2><span class="num">4</span> Logo</h2>
+    <div class="hint">Se puede mover arrastrando. Usá estos botones o pellizcá para agrandar/achicar.</div>
+    <div class="el-controls">
+      <div class="sizebtn" id="anLogoMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
+      <div class="sizebtn" id="anLogoPlus">+</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">5</span> Título línea 1</h2>
     <input type="text" id="an title1Text" style="display:none;">
     <input type="text" id="anTitle1Text" value="MORROCOY">
     <label>Fuente</label>
     <select id="anTitle1Font"></select>
     <div class="el-controls">
       <div class="sizebtn" id="anTitle1Minus">−</div>
-      <span style="font-size:12px; opacity:0.7;">Tamaño (pellizcá o usá los botones)</span>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño (pellizcá o usá los botones)</span>
       <div class="sizebtn" id="anTitle1Plus">+</div>
     </div>
   </div>
 
   <div class="card">
     <div class="toggle-row">
-      <h2 style="margin:0;"><span class="num">5</span> Título línea 2</h2>
+      <h2 style="margin:0;"><span class="num">6</span> Título línea 2</h2>
       <label class="switch"><input type="checkbox" id="anTitle2Toggle" checked><span class="slider"></span></label>
     </div>
     <input type="text" id="anTitle2Text" value="Hotel Mario" style="margin-top:10px;">
@@ -373,22 +422,27 @@ TODO INCLUIDO</div>
     <select id="anTitle2Font"></select>
     <div class="el-controls">
       <div class="sizebtn" id="anTitle2Minus">−</div>
-      <span style="font-size:12px; opacity:0.7;">Tamaño</span>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
       <div class="sizebtn" id="anTitle2Plus">+</div>
     </div>
   </div>
 
   <div class="card">
     <div class="toggle-row">
-      <h2 style="margin:0;"><span class="num">6</span> Slogan</h2>
+      <h2 style="margin:0;"><span class="num">7</span> Slogan</h2>
       <label class="switch"><input type="checkbox" id="anSloganToggle" checked><span class="slider"></span></label>
     </div>
-    <div class="hint">Tipografía fija (cursiva de marca). Se puede mover, no cambiar de fuente.</div>
+    <div class="hint">Tipografía fija (cursiva de marca). Se puede mover y agrandar, no cambiar de fuente.</div>
+    <div class="el-controls">
+      <div class="sizebtn" id="anSloganMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
+      <div class="sizebtn" id="anSloganPlus">+</div>
+    </div>
   </div>
 
   <div class="card">
     <div class="toggle-row">
-      <h2 style="margin:0;"><span class="num">7</span> Cartel de precio</h2>
+      <h2 style="margin:0;"><span class="num">8</span> Cartel de precio</h2>
       <label class="switch"><input type="checkbox" id="anPriceToggle" checked><span class="slider"></span></label>
     </div>
     <label>Texto (una línea por renglón)</label>
@@ -407,14 +461,14 @@ TODO INCLUIDO</textarea>
     </div>
     <div class="el-controls">
       <div class="sizebtn" id="anPriceMinus">−</div>
-      <span style="font-size:12px; opacity:0.7;">Tamaño</span>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
       <div class="sizebtn" id="anPricePlus">+</div>
     </div>
   </div>
 
   <div class="card">
     <div class="toggle-row">
-      <h2 style="margin:0;"><span class="num">8</span> Cartel de fecha / CTA</h2>
+      <h2 style="margin:0;"><span class="num">9</span> Cartel de fecha / CTA</h2>
       <label class="switch"><input type="checkbox" id="anDateToggle" checked><span class="slider"></span></label>
     </div>
     <label>Texto</label>
@@ -431,7 +485,7 @@ TODO INCLUIDO</textarea>
     </div>
     <div class="el-controls">
       <div class="sizebtn" id="anDateMinus">−</div>
-      <span style="font-size:12px; opacity:0.7;">Tamaño</span>
+      <span style="font-size:14.5px; opacity:0.8;">Tamaño</span>
       <div class="sizebtn" id="anDatePlus">+</div>
     </div>
   </div>
@@ -460,7 +514,7 @@ const WA_B64 = "iVBORw0KGgoAAAANSUhEUgAAALsAAADICAYAAACwJpAFAAAvsElEQVR4nO2de3xc
 </script>
 <script>
 const FONT_BASE_URL = "https://systechsoft.github.io/caramelo-post/fuentes/";
-const FONT_MANIFEST = [{"file": "AbrilFatface-Regular.ttf", "name": "Abril Fatface Regular", "family": "f000"}, {"file": "Air Travelers Personal Use.otf", "name": "Air Travelers Personal Use", "family": "f001"}, {"file": "air_mitalic.ttf", "name": "Air Mitalic", "family": "f002"}, {"file": "AL_Nevrada_Personal_Use_Only.otf", "name": "Al Nevrada Personal Use Only", "family": "f003"}, {"file": "Angelic Serif.ttf", "name": "Angelic Serif", "family": "f004"}, {"file": "Anton.ttf", "name": "Anton", "family": "f005"}, {"file": "ANTQUAB.TTF", "name": "Antquab", "family": "f006"}, {"file": "ANTQUABI.TTF", "name": "Antquabi", "family": "f007"}, {"file": "ANTQUAI.TTF", "name": "Antquai", "family": "f008"}, {"file": "arial.ttf", "name": "Arial", "family": "f009"}, {"file": "arialbd.ttf", "name": "Arialbd", "family": "f010"}, {"file": "arialbi.ttf", "name": "Arialbi", "family": "f011"}, {"file": "ariali.ttf", "name": "Ariali", "family": "f012"}, {"file": "ARIALN.TTF", "name": "Arialn", "family": "f013"}, {"file": "ARIALNB.TTF", "name": "Arialnb", "family": "f014"}, {"file": "ARIALNBI.TTF", "name": "Arialnbi", "family": "f015"}, {"file": "ARIALNI.TTF", "name": "Arialni", "family": "f016"}, {"file": "ariblk.ttf", "name": "Ariblk", "family": "f017"}, {"file": "ARLRDBD.TTF", "name": "Arlrdbd", "family": "f018"}, {"file": "bahnschrift.ttf", "name": "Bahnschrift", "family": "f019"}, {"file": "BarberChop.otf", "name": "Barber Chop", "family": "f020"}, {"file": "BAUHS93.TTF", "name": "Bauhs93", "family": "f021"}, {"file": "Bavista_Soulare.ttf", "name": "Bavista Soulare", "family": "f022"}, {"file": "BebasNeue-Regular.otf", "name": "Bebas Neue Regular", "family": "f023"}, {"file": "BELL.TTF", "name": "Bell", "family": "f024"}, {"file": "BELLB.TTF", "name": "Bellb", "family": "f025"}, {"file": "BELLI.TTF", "name": "Belli", "family": "f026"}, {"file": "BERNHC.TTF", "name": "Bernhc", "family": "f027"}, {"file": "BKANT.TTF", "name": "Bkant", "family": "f028"}, {"file": "BOD.TTF", "name": "Bod", "family": "f029"}, {"file": "BOD_0.TTF", "name": "Bod 0", "family": "f030"}, {"file": "BOD_BI.TTF", "name": "Bod Bi", "family": "f031"}, {"file": "BOD_BLAI.TTF", "name": "Bod Blai", "family": "f032"}, {"file": "BOD_BLAR.TTF", "name": "Bod Blar", "family": "f033"}, {"file": "BOD_CBI.TTF", "name": "Bod Cbi", "family": "f034"}, {"file": "BOD_CI.TTF", "name": "Bod Ci", "family": "f035"}, {"file": "BOD_CR.TTF", "name": "Bod Cr", "family": "f036"}, {"file": "BOD_I.TTF", "name": "Bod I", "family": "f037"}, {"file": "BOD_PSTC.TTF", "name": "Bod Pstc", "family": "f038"}, {"file": "BOD_R.TTF", "name": "Bod R", "family": "f039"}, {"file": "Boldblaster-Italic.ttf", "name": "Boldblaster Italic", "family": "f040"}, {"file": "Boldblaster-Regular.ttf", "name": "Boldblaster Regular", "family": "f041"}, {"file": "BOOKOS.TTF", "name": "Bookos", "family": "f042"}, {"file": "BOOKOSB.TTF", "name": "Bookosb", "family": "f043"}, {"file": "BOOKOSBI.TTF", "name": "Bookosbi", "family": "f044"}, {"file": "BOOKOSI.TTF", "name": "Bookosi", "family": "f045"}, {"file": "BoostPlayer_PERSONAL_USE_ONLY.otf", "name": "Boost Player Personal Use Only", "family": "f046"}, {"file": "BreeSerif-Regular.ttf", "name": "Bree Serif Regular", "family": "f047"}, {"file": "BRITANIC.TTF", "name": "Britanic", "family": "f048"}, {"file": "BROADW.TTF", "name": "Broadw", "family": "f049"}, {"file": "calibri.ttf", "name": "Calibri", "family": "f050"}, {"file": "calibrib.ttf", "name": "Calibrib", "family": "f051"}, {"file": "calibrii.ttf", "name": "Calibrii", "family": "f052"}, {"file": "calibril.ttf", "name": "Calibril", "family": "f053"}, {"file": "calibrili.ttf", "name": "Calibrili", "family": "f054"}, {"file": "calibriz.ttf", "name": "Calibriz", "family": "f055"}, {"file": "CALIFB.TTF", "name": "Califb", "family": "f056"}, {"file": "CALIFI.TTF", "name": "Califi", "family": "f057"}, {"file": "CALIFR.TTF", "name": "Califr", "family": "f058"}, {"file": "CALIST.TTF", "name": "Calist", "family": "f059"}, {"file": "CALISTB.TTF", "name": "Calistb", "family": "f060"}, {"file": "CALISTBI.TTF", "name": "Calistbi", "family": "f061"}, {"file": "CALISTI.TTF", "name": "Calisti", "family": "f062"}, {"file": "cambriab.ttf", "name": "Cambriab", "family": "f063"}, {"file": "cambriai.ttf", "name": "Cambriai", "family": "f064"}, {"file": "cambriaz.ttf", "name": "Cambriaz", "family": "f065"}, {"file": "CARERRA-Jones.otf", "name": "Carerra Jones", "family": "f066"}, {"file": "comic.ttf", "name": "Comic", "family": "f067"}, {"file": "comicbd.ttf", "name": "Comicbd", "family": "f068"}, {"file": "comici.ttf", "name": "Comici", "family": "f069"}, {"file": "comicz.ttf", "name": "Comicz", "family": "f070"}, {"file": "constan.ttf", "name": "Constan", "family": "f071"}, {"file": "constanb.ttf", "name": "Constanb", "family": "f072"}, {"file": "constani.ttf", "name": "Constani", "family": "f073"}, {"file": "constanz.ttf", "name": "Constanz", "family": "f074"}, {"file": "COOPBL.TTF", "name": "Coopbl", "family": "f075"}, {"file": "COPRGTB.TTF", "name": "Coprgtb", "family": "f076"}, {"file": "COPRGTL.TTF", "name": "Coprgtl", "family": "f077"}, {"file": "corbel.ttf", "name": "Corbel", "family": "f078"}, {"file": "corbelb.ttf", "name": "Corbelb", "family": "f079"}, {"file": "corbeli.ttf", "name": "Corbeli", "family": "f080"}, {"file": "corbell.ttf", "name": "Corbell", "family": "f081"}, {"file": "corbelli.ttf", "name": "Corbelli", "family": "f082"}, {"file": "corbelz.ttf", "name": "Corbelz", "family": "f083"}, {"file": "DFMinC1.ttf", "name": "Dfmin C1", "family": "f084"}, {"file": "dfmw5.ttf", "name": "Dfmw5", "family": "f085"}, {"file": "DFPop91.ttf", "name": "Dfpop91", "family": "f086"}, {"file": "Eastman-Grotesque-Black-Italic-trial.otf", "name": "Eastman Grotesque Black Italic Trial", "family": "f087"}, {"file": "Eastman-Grotesque-Black-trial.otf", "name": "Eastman Grotesque Black Trial", "family": "f088"}, {"file": "Eastman-Grotesque-Bold-Italic-trial.otf", "name": "Eastman Grotesque Bold Italic Trial", "family": "f089"}, {"file": "Eastman-Grotesque-Bold-trial.otf", "name": "Eastman Grotesque Bold Trial", "family": "f090"}, {"file": "Eastman-Grotesque-Demi-Bold-Italic-trial.otf", "name": "Eastman Grotesque Demi Bold Italic Trial", "family": "f091"}, {"file": "Eastman-Grotesque-Demi-Bold-trial.otf", "name": "Eastman Grotesque Demi Bold Trial", "family": "f092"}, {"file": "Eastman-Grotesque-Extrabold-Italic-trial.otf", "name": "Eastman Grotesque Extrabold Italic Trial", "family": "f093"}, {"file": "Eastman-Grotesque-Extrabold-trial.otf", "name": "Eastman Grotesque Extrabold Trial", "family": "f094"}, {"file": "Eastman-Grotesque-Extralight-Italic-trial.otf", "name": "Eastman Grotesque Extralight Italic Trial", "family": "f095"}, {"file": "Eastman-Grotesque-Heavy-Italic-trial.otf", "name": "Eastman Grotesque Heavy Italic Trial", "family": "f096"}, {"file": "Eastman-Grotesque-Heavy-trial.otf", "name": "Eastman Grotesque Heavy Trial", "family": "f097"}, {"file": "Eastman-Grotesque-Italic-trial.otf", "name": "Eastman Grotesque Italic Trial", "family": "f098"}, {"file": "Eastman-Grotesque-Light-Italic-trial.otf", "name": "Eastman Grotesque Light Italic Trial", "family": "f099"}, {"file": "Eastman-Grotesque-Light-trial.otf", "name": "Eastman Grotesque Light Trial", "family": "f100"}, {"file": "Eastman-Grotesque-Medium-Italic-trial.otf", "name": "Eastman Grotesque Medium Italic Trial", "family": "f101"}, {"file": "Eastman-Grotesque-Medium-trial.otf", "name": "Eastman Grotesque Medium Trial", "family": "f102"}, {"file": "Eastman-Grotesque-Regular-trial.otf", "name": "Eastman Grotesque Regular Trial", "family": "f103"}, {"file": "Eastman-Grotesque-Thin-Italic-trial.otf", "name": "Eastman Grotesque Thin Italic Trial", "family": "f104"}, {"file": "Eastman-Grotesque-Thin-trial.otf", "name": "Eastman Grotesque Thin Trial", "family": "f105"}, {"file": "Edges.ttf", "name": "Edges", "family": "f106"}, {"file": "ENGR.TTF", "name": "Engr", "family": "f107"}, {"file": "ERASBD.TTF", "name": "Erasbd", "family": "f108"}, {"file": "ERASDEMI.TTF", "name": "Erasdemi", "family": "f109"}, {"file": "ERASLGHT.TTF", "name": "Eraslght", "family": "f110"}, {"file": "ERASMD.TTF", "name": "Erasmd", "family": "f111"}, {"file": "FORTE.TTF", "name": "Forte", "family": "f112"}, {"file": "FunkyBird_PERSONAL_USE_ONLY.otf", "name": "Funky Bird Personal Use Only", "family": "f113"}, {"file": "HATTEN.TTF", "name": "Hatten", "family": "f114"}, {"file": "HemgjordLettering_PERSONAL_USE_ONLY.otf", "name": "Hemgjord Lettering Personal Use Only", "family": "f115"}, {"file": "HPSimplified_Bd.ttf", "name": "Hpsimplified Bd", "family": "f116"}, {"file": "HPSimplified_BdIt.ttf", "name": "Hpsimplified Bd It", "family": "f117"}, {"file": "HPSimplified_It.ttf", "name": "Hpsimplified It", "family": "f118"}, {"file": "HPSimplified_Lt.ttf", "name": "Hpsimplified Lt", "family": "f119"}, {"file": "HPSimplified_LtIt.ttf", "name": "Hpsimplified Lt It", "family": "f120"}, {"file": "HPSimplified_Rg.ttf", "name": "Hpsimplified Rg", "family": "f121"}, {"file": "IMPRISHA.TTF", "name": "Imprisha", "family": "f122"}, {"file": "INFROMAN.TTF", "name": "Infroman", "family": "f123"}, {"file": "Inkfree.ttf", "name": "Inkfree", "family": "f124"}, {"file": "Inter-V.ttf", "name": "Inter V", "family": "f125"}, {"file": "intrepid.ttf", "name": "Intrepid", "family": "f126"}, {"file": "JUICE___.TTF", "name": "Juice", "family": "f127"}, {"file": "KasseFLF-Bold.ttf", "name": "Kasse Flf Bold", "family": "f128"}, {"file": "KasseFLF.ttf", "name": "Kasse Flf", "family": "f129"}, {"file": "KasseUltraFLF.ttf", "name": "Kasse Ultra Flf", "family": "f130"}, {"file": "LearningCurve.ttf", "name": "Learning Curve", "family": "f131"}, {"file": "LTe50401.ttf", "name": "Lte50401", "family": "f132"}, {"file": "LTe50402.ttf", "name": "Lte50402", "family": "f133"}, {"file": "LTe50403.ttf", "name": "Lte50403", "family": "f134"}, {"file": "LTe50404.ttf", "name": "Lte50404", "family": "f135"}, {"file": "LTe50405.ttf", "name": "Lte50405", "family": "f136"}, {"file": "manly_man_font.ttf", "name": "Manly Man Font", "family": "f137"}, {"file": "MATURASC.TTF", "name": "Maturasc", "family": "f138"}, {"file": "MayberryPro-Semibold.ttf", "name": "Mayberry Pro Semibold", "family": "f139"}, {"file": "MiasScribblings~.ttf", "name": "Mias Scribblings~", "family": "f140"}, {"file": "micross.ttf", "name": "Micross", "family": "f141"}, {"file": "mlssym.ttf", "name": "Mlssym", "family": "f142"}, {"file": "Montserrat-Black.ttf", "name": "Montserrat Black", "family": "f143"}, {"file": "Montserrat-BlackItalic.ttf", "name": "Montserrat Black Italic", "family": "f144"}, {"file": "Montserrat-Bold.ttf", "name": "Montserrat Bold", "family": "f145"}, {"file": "Montserrat-BoldItalic.ttf", "name": "Montserrat Bold Italic", "family": "f146"}, {"file": "Montserrat-ExtraBold.otf", "name": "Montserrat Extra Bold", "family": "f147"}, {"file": "Montserrat-ExtraBoldItalic.ttf", "name": "Montserrat Extra Bold Italic", "family": "f148"}, {"file": "Montserrat-ExtraLight.otf", "name": "Montserrat Extra Light", "family": "f149"}, {"file": "Montserrat-ExtraLightItalic.ttf", "name": "Montserrat Extra Light Italic", "family": "f150"}, {"file": "Montserrat-Italic.ttf", "name": "Montserrat Italic", "family": "f151"}, {"file": "Montserrat-Light.otf", "name": "Montserrat Light", "family": "f152"}, {"file": "Montserrat-LightItalic.ttf", "name": "Montserrat Light Italic", "family": "f153"}, {"file": "Montserrat-Medium.otf", "name": "Montserrat Medium", "family": "f154"}, {"file": "Montserrat-MediumItalic.ttf", "name": "Montserrat Medium Italic", "family": "f155"}, {"file": "Montserrat-Regular.otf", "name": "Montserrat Regular", "family": "f156"}, {"file": "Montserrat-SemiBold.otf", "name": "Montserrat Semi Bold", "family": "f157"}, {"file": "Montserrat-SemiBoldItalic.ttf", "name": "Montserrat Semi Bold Italic", "family": "f158"}, {"file": "Montserrat-Thin.otf", "name": "Montserrat Thin", "family": "f159"}, {"file": "Montserrat-ThinItalic.ttf", "name": "Montserrat Thin Italic", "family": "f160"}, {"file": "MontserratAlternates-Black.otf", "name": "Montserrat Alternates Black", "family": "f161"}, {"file": "MontserratAlternates-Bold.otf", "name": "Montserrat Alternates Bold", "family": "f162"}, {"file": "MontserratAlternates-ExtraBold.otf", "name": "Montserrat Alternates Extra Bold", "family": "f163"}, {"file": "MontserratAlternates-ExtraLight.otf", "name": "Montserrat Alternates Extra Light", "family": "f164"}, {"file": "MontserratAlternates-Light.otf", "name": "Montserrat Alternates Light", "family": "f165"}, {"file": "MontserratAlternates-Medium.otf", "name": "Montserrat Alternates Medium", "family": "f166"}, {"file": "MontserratAlternates-Regular.otf", "name": "Montserrat Alternates Regular", "family": "f167"}, {"file": "MontserratAlternates-SemiBold.otf", "name": "Montserrat Alternates Semi Bold", "family": "f168"}, {"file": "MontserratAlternates-Thin.otf", "name": "Montserrat Alternates Thin", "family": "f169"}, {"file": "NotoSerif-Bold.ttf", "name": "Noto Serif Bold", "family": "f170"}, {"file": "NotoSerif-BoldItalic.ttf", "name": "Noto Serif Bold Italic", "family": "f171"}, {"file": "NotoSerif-Italic.ttf", "name": "Noto Serif Italic", "family": "f172"}, {"file": "NotoSerif-Regular.ttf", "name": "Noto Serif Regular", "family": "f173"}, {"file": "NuevaStd-Bold.otf", "name": "Nueva Std Bold", "family": "f174"}, {"file": "NuevaStd-BoldCond.otf", "name": "Nueva Std Bold Cond", "family": "f175"}, {"file": "NuevaStd-BoldCondItalic.otf", "name": "Nueva Std Bold Cond Italic", "family": "f176"}, {"file": "NuevaStd-Cond.otf", "name": "Nueva Std Cond", "family": "f177"}, {"file": "NuevaStd-CondItalic.otf", "name": "Nueva Std Cond Italic", "family": "f178"}, {"file": "NuevaStd-Italic.otf", "name": "Nueva Std Italic", "family": "f179"}, {"file": "Nusaline.ttf", "name": "Nusaline", "family": "f180"}, {"file": "nyala.ttf", "name": "Nyala", "family": "f181"}, {"file": "OCR-a__.ttf", "name": "Ocr A", "family": "f182"}, {"file": "OCR-b__.ttf", "name": "Ocr B", "family": "f183"}, {"file": "OCRAStd.otf", "name": "Ocrastd", "family": "f184"}, {"file": "opiated.ttf", "name": "Opiated", "family": "f185"}, {"file": "OpTic.ttf", "name": "Op Tic", "family": "f186"}, {"file": "PackyGreat.ttf", "name": "Packy Great", "family": "f187"}, {"file": "pala.ttf", "name": "Pala", "family": "f188"}, {"file": "palab.ttf", "name": "Palab", "family": "f189"}, {"file": "palabi.ttf", "name": "Palabi", "family": "f190"}, {"file": "palai.ttf", "name": "Palai", "family": "f191"}, {"file": "PAPYRUS.TTF", "name": "Papyrus", "family": "f192"}, {"file": "PEPSI_pl.ttf", "name": "Pepsi Pl", "family": "f193"}, {"file": "perfectdrown.ttf", "name": "Perfectdrown", "family": "f194"}, {"file": "phagspa.ttf", "name": "Phagspa", "family": "f195"}, {"file": "phagspab.ttf", "name": "Phagspab", "family": "f196"}, {"file": "PhrasMe.ttf", "name": "Phras Me", "family": "f197"}, {"file": "PORKH_.TTF", "name": "Porkh", "family": "f198"}, {"file": "PORKYS.TTF", "name": "Porkys", "family": "f199"}, {"file": "PowerChord.ttf", "name": "Power Chord", "family": "f200"}, {"file": "prc.ttf", "name": "Prc", "family": "f201"}, {"file": "PressboardRegular.ttf", "name": "Pressboard Regular", "family": "f202"}, {"file": "PrestigeEliteStd-Bd.otf", "name": "Prestige Elite Std Bd", "family": "f203"}, {"file": "pricedown.ttf", "name": "Pricedown", "family": "f204"}, {"file": "SansSerifExbFLF-Italic.otf", "name": "Sans Serif Exb Flf Italic", "family": "f205"}, {"file": "SansSerifExbFLF.otf", "name": "Sans Serif Exb Flf", "family": "f206"}, {"file": "SansSerifExbFLFCond-Italic.otf", "name": "Sans Serif Exb Flfcond Italic", "family": "f207"}, {"file": "SansSerifExbFLFCond.otf", "name": "Sans Serif Exb Flfcond", "family": "f208"}, {"file": "segoepr.ttf", "name": "Segoepr", "family": "f209"}, {"file": "segoeprb.ttf", "name": "Segoeprb", "family": "f210"}, {"file": "segoesc.ttf", "name": "Segoesc", "family": "f211"}, {"file": "segoescb.ttf", "name": "Segoescb", "family": "f212"}, {"file": "SERIBLI.ttf", "name": "Seribli", "family": "f213"}, {"file": "SF Automaton Bold Oblique.ttf", "name": "Sf Automaton Bold Oblique", "family": "f214"}, {"file": "SF Automaton Bold.ttf", "name": "Sf Automaton Bold", "family": "f215"}, {"file": "SF Automaton Condensed Oblique.ttf", "name": "Sf Automaton Condensed Oblique", "family": "f216"}, {"file": "SF Automaton Condensed.ttf", "name": "Sf Automaton Condensed", "family": "f217"}, {"file": "SF Automaton Extended Oblique.ttf", "name": "Sf Automaton Extended Oblique", "family": "f218"}, {"file": "SF Automaton Extended.ttf", "name": "Sf Automaton Extended", "family": "f219"}, {"file": "SF Automaton Oblique.ttf", "name": "Sf Automaton Oblique", "family": "f220"}, {"file": "SF Automaton.ttf", "name": "Sf Automaton", "family": "f221"}, {"file": "SF New Republic.ttf", "name": "Sf New Republic", "family": "f222"}, {"file": "SHOWG.TTF", "name": "Showg", "family": "f223"}, {"file": "SitkaVF-Italic.ttf", "name": "Sitka Vf Italic", "family": "f224"}, {"file": "SitkaVF.ttf", "name": "Sitka Vf", "family": "f225"}, {"file": "SlabTallX-Medium.ttf", "name": "Slab Tall X Medium", "family": "f226"}, {"file": "SlabTallX.ttf", "name": "Slab Tall X", "family": "f227"}, {"file": "SLANT.TTF", "name": "Slant", "family": "f228"}, {"file": "Sliced_Juice.ttf", "name": "Sliced Juice", "family": "f229"}, {"file": "Sling.ttf", "name": "Sling", "family": "f230"}, {"file": "SlingBold.ttf", "name": "Sling Bold", "family": "f231"}, {"file": "SlingLight.ttf", "name": "Sling Light", "family": "f232"}, {"file": "SNAP___.TTF", "name": "Snap", "family": "f233"}, {"file": "spyagency.ttf", "name": "Spyagency", "family": "f234"}, {"file": "spyagencycond.ttf", "name": "Spyagencycond", "family": "f235"}, {"file": "spyagencycondital.ttf", "name": "Spyagencycondital", "family": "f236"}, {"file": "spyagencyexpand.ttf", "name": "Spyagencyexpand", "family": "f237"}, {"file": "spyagencyexpandital.ttf", "name": "Spyagencyexpandital", "family": "f238"}, {"file": "spyagencyital.ttf", "name": "Spyagencyital", "family": "f239"}, {"file": "staravenue.ttf", "name": "Staravenue", "family": "f240"}, {"file": "steelfish bd it.otf", "name": "Steelfish Bd It", "family": "f241"}, {"file": "steelfish bd.otf", "name": "Steelfish Bd", "family": "f242"}, {"file": "steelfish eb it.otf", "name": "Steelfish Eb It", "family": "f243"}, {"file": "steelfish eb.otf", "name": "Steelfish Eb", "family": "f244"}, {"file": "steelfish rg it.otf", "name": "Steelfish Rg It", "family": "f245"}, {"file": "steelfish rg.otf", "name": "Steelfish Rg", "family": "f246"}, {"file": "STENCIL.TTF", "name": "Stencil", "family": "f247"}, {"file": "StencilStd.otf", "name": "Stencil Std", "family": "f248"}, {"file": "Stylin BRK.ttf", "name": "Stylin Brk", "family": "f249"}, {"file": "SuperMario256.ttf", "name": "Super Mario256", "family": "f250"}, {"file": "Transformers Movie.ttf", "name": "Transformers Movie", "family": "f251"}, {"file": "Transformers.ttf", "name": "Transformers", "family": "f252"}, {"file": "trebuc.ttf", "name": "Trebuc", "family": "f253"}, {"file": "trebucbd.ttf", "name": "Trebucbd", "family": "f254"}, {"file": "trebucbi.ttf", "name": "Trebucbi", "family": "f255"}, {"file": "trebucit.ttf", "name": "Trebucit", "family": "f256"}, {"file": "TRON.TTF", "name": "Tron", "family": "f257"}, {"file": "tsextols.ttf", "name": "Tsextols", "family": "f258"}, {"file": "tt0007m.ttf", "name": "Tt0007M", "family": "f259"}, {"file": "tt0009m.ttf", "name": "Tt0009M", "family": "f260"}, {"file": "tt0010m.ttf", "name": "Tt0010M", "family": "f261"}, {"file": "tt0037m.ttf", "name": "Tt0037M", "family": "f262"}, {"file": "tt0038m.ttf", "name": "Tt0038M", "family": "f263"}, {"file": "tt0102m.ttf", "name": "Tt0102M", "family": "f264"}, {"file": "tt0142m.ttf", "name": "Tt0142M", "family": "f265"}, {"file": "tt0143m.ttf", "name": "Tt0143M", "family": "f266"}, {"file": "tt0144m.ttf", "name": "Tt0144M", "family": "f267"}, {"file": "tt0145m.ttf", "name": "Tt0145M", "family": "f268"}, {"file": "tt0171m.ttf", "name": "Tt0171M", "family": "f269"}, {"file": "tt0172m.ttf", "name": "Tt0172M", "family": "f270"}, {"file": "tt0173m.ttf", "name": "Tt0173M", "family": "f271"}, {"file": "tt0283m.ttf", "name": "Tt0283M", "family": "f272"}, {"file": "tt0284m.ttf", "name": "Tt0284M", "family": "f273"}, {"file": "tt0290m.ttf", "name": "Tt0290M", "family": "f274"}, {"file": "tt0291m.ttf", "name": "Tt0291M", "family": "f275"}, {"file": "tt0292m.ttf", "name": "Tt0292M", "family": "f276"}, {"file": "tt0293m.ttf", "name": "Tt0293M", "family": "f277"}, {"file": "tt0351m.ttf", "name": "Tt0351M", "family": "f278"}, {"file": "tt0627m.ttf", "name": "Tt0627M", "family": "f279"}, {"file": "tt0628m.ttf", "name": "Tt0628M", "family": "f280"}, {"file": "tt0726m.ttf", "name": "Tt0726M", "family": "f281"}, {"file": "tt0861m.ttf", "name": "Tt0861M", "family": "f282"}, {"file": "tt1018m.ttf", "name": "Tt1018M", "family": "f283"}, {"file": "tt1161m.ttf", "name": "Tt1161M", "family": "f284"}, {"file": "tunga.ttf", "name": "Tunga", "family": "f285"}, {"file": "tungab.ttf", "name": "Tungab", "family": "f286"}, {"file": "Twitter Font (2).TTF", "name": "Twitter Font (2)", "family": "f287"}, {"file": "Twitter font.TTF", "name": "Twitter Font", "family": "f288"}, {"file": "Unrealised.ttf", "name": "Unrealised", "family": "f289"}, {"file": "Very Damaged.ttf", "name": "Very Damaged", "family": "f290"}, {"file": "WAR2.TTF", "name": "War2", "family": "f291"}, {"file": "wbv4.ttf", "name": "Wbv4", "family": "f292"}, {"file": "wbv4b.ttf", "name": "Wbv4B", "family": "f293"}, {"file": "wbv4c.ttf", "name": "Wbv4C", "family": "f294"}, {"file": "wbv4i.ttf", "name": "Wbv4I", "family": "f295"}, {"file": "Whatka!.ttf", "name": "Whatka!", "family": "f296"}, {"file": "Zurche.ttf", "name": "Zurche", "family": "f297"}];
+const FONT_MANIFEST = [{"file": "AbrilFatface-Regular.ttf", "name": "Abril Fatface Regular", "family": "f000"}, {"file": "air_mitalic.ttf", "name": "Air Mitalic", "family": "f001"}, {"file": "Air Travelers Personal Use.otf", "name": "Air Travelers Personal Use", "family": "f002"}, {"file": "AL_Nevrada_Personal_Use_Only.otf", "name": "Al Nevrada Personal Use Only", "family": "f003"}, {"file": "Angelic Serif.ttf", "name": "Angelic Serif", "family": "f004"}, {"file": "Anton.ttf", "name": "Anton", "family": "f005"}, {"file": "ANTQUAB.TTF", "name": "Antquab", "family": "f006"}, {"file": "ARLRDBD.TTF", "name": "Arlrdbd", "family": "f007"}, {"file": "BarberChop.otf", "name": "Barber Chop", "family": "f008"}, {"file": "BAUHS93.TTF", "name": "Bauhs93", "family": "f009"}, {"file": "Bavista_Soulare.ttf", "name": "Bavista Soulare", "family": "f010"}, {"file": "BebasNeue-Regular.otf", "name": "Bebas Neue Regular", "family": "f011"}, {"file": "BELL.TTF", "name": "Bell", "family": "f012"}, {"file": "BERNHC.TTF", "name": "Bernhc", "family": "f013"}, {"file": "BKANT.TTF", "name": "Bkant", "family": "f014"}, {"file": "BOD.TTF", "name": "Bod", "family": "f015"}, {"file": "BOD_PSTC.TTF", "name": "Bod Pstc", "family": "f016"}, {"file": "BOD_R.TTF", "name": "Bod R", "family": "f017"}, {"file": "Boldblaster-Regular.ttf", "name": "Boldblaster Regular", "family": "f018"}, {"file": "BoostPlayer_PERSONAL_USE_ONLY.otf", "name": "Boost Player Personal Use Only", "family": "f019"}, {"file": "BreeSerif-Regular.ttf", "name": "Bree Serif Regular", "family": "f020"}, {"file": "BRITANIC.TTF", "name": "Britanic", "family": "f021"}, {"file": "BROADW.TTF", "name": "Broadw", "family": "f022"}, {"file": "CALIFB.TTF", "name": "Califb", "family": "f023"}, {"file": "CALISTB.TTF", "name": "Calistb", "family": "f024"}, {"file": "CARERRA-Jones.otf", "name": "Carerra Jones", "family": "f025"}, {"file": "COOPBL.TTF", "name": "Coopbl", "family": "f026"}, {"file": "COPRGTB.TTF", "name": "Coprgtb", "family": "f027"}, {"file": "DFMinC1.ttf", "name": "Dfmin C1", "family": "f028"}, {"file": "DFPop91.ttf", "name": "Dfpop91", "family": "f029"}, {"file": "Eastman-Grotesque-Black-trial.otf", "name": "Eastman Grotesque Black Trial", "family": "f030"}, {"file": "Edges.ttf", "name": "Edges", "family": "f031"}, {"file": "ENGR.TTF", "name": "Engr", "family": "f032"}, {"file": "ERASBD.TTF", "name": "Erasbd", "family": "f033"}, {"file": "FORTE.TTF", "name": "Forte", "family": "f034"}, {"file": "FunkyBird_PERSONAL_USE_ONLY.otf", "name": "Funky Bird Personal Use Only", "family": "f035"}, {"file": "HATTEN.TTF", "name": "Hatten", "family": "f036"}, {"file": "HemgjordLettering_PERSONAL_USE_ONLY.otf", "name": "Hemgjord Lettering Personal Use Only", "family": "f037"}, {"file": "IMPRISHA.TTF", "name": "Imprisha", "family": "f038"}, {"file": "INFROMAN.TTF", "name": "Infroman", "family": "f039"}, {"file": "Inkfree.ttf", "name": "Inkfree", "family": "f040"}, {"file": "Inter-V.ttf", "name": "Inter V", "family": "f041"}, {"file": "JUICE___.TTF", "name": "Juice", "family": "f042"}, {"file": "KasseFLF-Bold.ttf", "name": "Kasse Flf Bold", "family": "f043"}, {"file": "KasseUltraFLF.ttf", "name": "Kasse Ultra Flf", "family": "f044"}, {"file": "LearningCurve.ttf", "name": "Learning Curve", "family": "f045"}, {"file": "LTe50401.ttf", "name": "Lte50401", "family": "f046"}, {"file": "LTe50402.ttf", "name": "Lte50402", "family": "f047"}, {"file": "LTe50403.ttf", "name": "Lte50403", "family": "f048"}, {"file": "manly_man_font.ttf", "name": "Manly Man Font", "family": "f049"}, {"file": "MATURASC.TTF", "name": "Maturasc", "family": "f050"}, {"file": "MayberryPro-Semibold.ttf", "name": "Mayberry Pro Semibold", "family": "f051"}, {"file": "MiasScribblings~.ttf", "name": "Mias Scribblings~", "family": "f052"}, {"file": "Montserrat-ExtraBold.otf", "name": "Montserrat Extra Bold", "family": "f053"}, {"file": "NotoSerif-Bold.ttf", "name": "Noto Serif Bold", "family": "f054"}, {"file": "NuevaStd-Bold.otf", "name": "Nueva Std Bold", "family": "f055"}, {"file": "Nusaline.ttf", "name": "Nusaline", "family": "f056"}, {"file": "OCR-a__.ttf", "name": "Ocr A", "family": "f057"}, {"file": "OCRAStd.otf", "name": "Ocrastd", "family": "f058"}, {"file": "OpTic.ttf", "name": "Op Tic", "family": "f059"}, {"file": "PackyGreat.ttf", "name": "Packy Great", "family": "f060"}, {"file": "PAPYRUS.TTF", "name": "Papyrus", "family": "f061"}, {"file": "PEPSI_pl.ttf", "name": "Pepsi Pl", "family": "f062"}, {"file": "perfectdrown.ttf", "name": "Perfectdrown", "family": "f063"}, {"file": "PhrasMe.ttf", "name": "Phras Me", "family": "f064"}, {"file": "PORKH_.TTF", "name": "Porkh", "family": "f065"}, {"file": "PORKYS.TTF", "name": "Porkys", "family": "f066"}, {"file": "PowerChord.ttf", "name": "Power Chord", "family": "f067"}, {"file": "PressboardRegular.ttf", "name": "Pressboard Regular", "family": "f068"}, {"file": "PrestigeEliteStd-Bd.otf", "name": "Prestige Elite Std Bd", "family": "f069"}, {"file": "pricedown.ttf", "name": "Pricedown", "family": "f070"}, {"file": "SansSerifExbFLF.otf", "name": "Sans Serif Exb Flf", "family": "f071"}, {"file": "SERIBLI.ttf", "name": "Seribli", "family": "f072"}, {"file": "SF Automaton Bold.ttf", "name": "Sf Automaton Bold", "family": "f073"}, {"file": "SF New Republic.ttf", "name": "Sf New Republic", "family": "f074"}, {"file": "SHOWG.TTF", "name": "Showg", "family": "f075"}, {"file": "SlabTallX-Medium.ttf", "name": "Slab Tall X Medium", "family": "f076"}, {"file": "SLANT.TTF", "name": "Slant", "family": "f077"}, {"file": "Sliced_Juice.ttf", "name": "Sliced Juice", "family": "f078"}, {"file": "Sling.ttf", "name": "Sling", "family": "f079"}, {"file": "SNAP___.TTF", "name": "Snap", "family": "f080"}, {"file": "spyagency.ttf", "name": "Spyagency", "family": "f081"}, {"file": "spyagencycond.ttf", "name": "Spyagencycond", "family": "f082"}, {"file": "spyagencycondital.ttf", "name": "Spyagencycondital", "family": "f083"}, {"file": "staravenue.ttf", "name": "Staravenue", "family": "f084"}, {"file": "steelfish bd it.otf", "name": "Steelfish Bd It", "family": "f085"}, {"file": "STENCIL.TTF", "name": "Stencil", "family": "f086"}, {"file": "Stylin BRK.ttf", "name": "Stylin Brk", "family": "f087"}, {"file": "SuperMario256.ttf", "name": "Super Mario256", "family": "f088"}, {"file": "Transformers.ttf", "name": "Transformers", "family": "f089"}, {"file": "TRON.TTF", "name": "Tron", "family": "f090"}, {"file": "tsextols.ttf", "name": "Tsextols", "family": "f091"}, {"file": "Twitter font.TTF", "name": "Twitter Font", "family": "f092"}, {"file": "Unrealised.ttf", "name": "Unrealised", "family": "f093"}, {"file": "Very Damaged.ttf", "name": "Very Damaged", "family": "f094"}, {"file": "WAR2.TTF", "name": "War2", "family": "f095"}, {"file": "wbv4.ttf", "name": "Wbv4", "family": "f096"}, {"file": "wbv4b.ttf", "name": "Wbv4B", "family": "f097"}, {"file": "Whatka!.ttf", "name": "Whatka!", "family": "f098"}, {"file": "Zurche.ttf", "name": "Zurche", "family": "f099"}];
 
 </script>
 <script>
@@ -681,6 +735,27 @@ cronoFormatReel.addEventListener('click', () => {
   cronoFormatPost.classList.remove('active');
   scheduleRender();
 });
+
+// ---------- Theme toggle (dark/light UI, doesn't affect generated pieces) ----------
+(function () {
+  const btn = document.getElementById('themeToggle');
+  const body = document.body;
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      body.setAttribute('data-theme', 'light');
+      btn.textContent = '☀️';
+    } else {
+      body.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+    }
+  }
+  let current = 'dark';
+  applyTheme(current);
+  btn.addEventListener('click', () => {
+    current = current === 'dark' ? 'light' : 'dark';
+    applyTheme(current);
+  });
+})();
 
 // (selector de columnas eliminado — la app usa siempre 1 columna con auto-ajuste de texto)
 
@@ -1077,11 +1152,17 @@ function isIOS() {
 
 function updateSaveHint() {
   const hint = document.getElementById('saveHint');
-  if (isIOS()) {
-    hint.textContent = "En iPhone/iPad: mantené presionada la imagen de arriba y elegí \"Agregar a Fotos\" o \"Guardar imagen\". El botón también abre la imagen en una pestaña nueva por si el navegador no descarga directo.";
-  } else {
-    hint.textContent = "La imagen se descarga a tu carpeta de Descargas o Galería. Si no pasa nada al tocar el botón, mantené presionada la imagen de arriba y elegí \"Descargar imagen\".";
-  }
+  hint.textContent = "La imagen se descarga sola a tu carpeta de Descargas o Galería. Si tu navegador no la descarga automáticamente, mantené presionada la imagen de arriba y elegí \"Descargar imagen\".";
+}
+
+function triggerDownload(canvas, filename) {
+  const dataUrl = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = dataUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ---------- Safe render wrapper + live auto-update (debounced) ----------
@@ -1109,36 +1190,16 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   await renderPieceSafe();
   loadingMsg.style.display = 'none';
   document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
+  // auto-download right after generating, so there's no extra step
+  const canvas = document.getElementById('workCanvas');
+  const titleSlug = (document.getElementById('titleInput').value || 'pieza').toLowerCase().replace(/[^a-z0-9]+/g,'_');
+  triggerDownload(canvas, `caramelo_${titleSlug}.png`);
 });
 
 document.getElementById('downloadBtn').addEventListener('click', () => {
   const canvas = document.getElementById('workCanvas');
   const titleSlug = (document.getElementById('titleInput').value || 'pieza').toLowerCase().replace(/[^a-z0-9]+/g,'_');
-  const filename = `caramelo_${titleSlug}.png`;
-  const dataUrl = canvas.toDataURL('image/png');
-
-  if (isIOS()) {
-    // iOS Safari generally ignores the download attribute, so open the
-    // image in a new tab where the user can long-press to save it.
-    const newTab = window.open();
-    if (newTab) {
-      newTab.document.write(
-        `<title>${filename}</title>` +
-        `<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;">` +
-        `<img src="${dataUrl}" style="max-width:100%;height:auto;" alt="${filename}"></body>`
-      );
-    } else {
-      // popup blocked — fall back to the visible <img> already on screen
-      alert('Mantené presionada la imagen de la vista previa y elegí "Guardar imagen".');
-    }
-  } else {
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  triggerDownload(canvas, `caramelo_${titleSlug}.png`);
 });
 
 </script>
@@ -1169,7 +1230,7 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   const DEFAULTS = JSON.parse(JSON.stringify(els));
   const DEFAULT_PHOTO = JSON.parse(JSON.stringify(photoState));
 
-  let locked = false;
+  let photoLocked = false;
 
   // ---------- DOM refs ----------
   const elLogo = document.getElementById('elLogo');
@@ -1331,7 +1392,7 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     let lastCenter = null;
 
     domEl.addEventListener('pointerdown', (e) => {
-      if (locked) return;
+      if (opts.isPhoto && photoLocked) return;
       try { domEl.setPointerCapture(e.pointerId); } catch(err) {}
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2) {
@@ -1344,7 +1405,8 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     });
 
     domEl.addEventListener('pointermove', (e) => {
-      if (locked || !pointers.has(e.pointerId)) return;
+      if (opts.isPhoto && photoLocked) return;
+      if (!pointers.has(e.pointerId)) return;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const rect = stageRect();
 
@@ -1404,13 +1466,13 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   attachGesture(elPriceBadge, els.price, { minScale: 0.4, maxScale: 3 });
   attachGesture(elDateBadge, els.date, { minScale: 0.4, maxScale: 3 });
 
-  // ---------- lock toggle ----------
+  // ---------- lock toggle (photo only) ----------
   const anLockBtn = document.getElementById('anLockBtn');
   anLockBtn.addEventListener('click', () => {
-    locked = !locked;
-    document.querySelectorAll('.stage-el').forEach(el => el.classList.toggle('locked', locked));
-    anLockBtn.textContent = locked ? '🔒 Desbloquear' : '🔓 Bloquear todo';
-    anLockBtn.classList.toggle('lock-on', locked);
+    photoLocked = !photoLocked;
+    stage.style.cursor = photoLocked ? 'default' : 'grab';
+    anLockBtn.textContent = photoLocked ? '🔒 Desbloquear foto' : '🔓 Bloquear foto';
+    anLockBtn.classList.toggle('lock-on', photoLocked);
   });
 
   // ---------- reset ----------
@@ -1448,6 +1510,8 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
       layoutElement(domEl, state); scheduleAnRender();
     });
   }
+  bindSizeButtons('anLogoMinus', 'anLogoPlus', els.logo, elLogo, 0.08);
+  bindSizeButtons('anSloganMinus', 'anSloganPlus', els.slogan, elSlogan, 0.08);
   bindSizeButtons('anTitle1Minus', 'anTitle1Plus', els.title1, elTitle1, 0.08);
   bindSizeButtons('anTitle2Minus', 'anTitle2Plus', els.title2, elTitle2, 0.08);
   bindSizeButtons('anPriceMinus', 'anPricePlus', els.price, elPriceBadge, 0.08);
@@ -1630,6 +1694,8 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     await renderAnuncio().catch(console.error);
     loadingMsg.style.display = 'none';
     document.getElementById('anPreviewCard').scrollIntoView({behavior:'smooth', block:'start'});
+    // auto-download right after generating, so there's no extra step
+    triggerAnDownload();
   });
 
   function isIOSDevice() {
@@ -1638,31 +1704,22 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   }
   function updateAnSaveHint() {
     const hint = document.getElementById('anSaveHint');
-    if (isIOSDevice()) {
-      hint.textContent = 'En iPhone/iPad: mantené presionada la imagen y elegí "Guardar imagen".';
-    } else {
-      hint.textContent = 'Si no descarga directo, mantené presionada la imagen y elegí "Descargar imagen".';
-    }
+    hint.textContent = 'La imagen se descarga sola. Si tu navegador no la descarga automáticamente, mantené presionada la imagen de arriba y elegí "Descargar imagen".';
+  }
+
+  function triggerAnDownload() {
+    const canvas = document.getElementById('anWorkCanvas');
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'anuncio_caramelo.png';
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   document.getElementById('anDownloadBtn').addEventListener('click', () => {
-    const canvas = document.getElementById('anWorkCanvas');
-    const dataUrl = canvas.toDataURL('image/png');
-    if (isIOSDevice()) {
-      const newTab = window.open();
-      if (newTab) {
-        newTab.document.write(`<title>anuncio_caramelo.png</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${dataUrl}" style="max-width:100%;height:auto;"></body>`);
-      } else {
-        alert('Mantené presionada la imagen y elegí "Guardar imagen".');
-      }
-    } else {
-      const link = document.createElement('a');
-      link.download = 'anuncio_caramelo.png';
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    triggerAnDownload();
   });
 
   // ---------- tab switching ----------
