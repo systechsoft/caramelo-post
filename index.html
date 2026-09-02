@@ -248,10 +248,15 @@
   .anuncios-toolbar button.active { background:#ff2e9a; border-color:#ff2e9a; }
   .anuncios-toolbar button.lock-on { background:#1db954; border-color:#1db954; }
 
-  .el-controls { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .el-controls { display:flex; align-items:center; gap:14px; margin-top:10px; }
   .el-controls .sizebtn {
-    width:34px; height:34px; border-radius:8px; border:1px solid var(--input-border);
-    background:var(--input-bg); color:var(--text-main); font-size:18px; font-weight:700; cursor:pointer;
+    width:40px; height:40px; border-radius:50%; border:none;
+    background:transparent; color:#ff2e9a; font-size:30px; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+    transition: background 0.15s ease;
+  }
+  .el-controls .sizebtn:active {
+    background: rgba(255,46,154,0.15);
   }
   .el-controls select { flex:1; }
   .colorswatch { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
@@ -325,6 +330,12 @@
     <div class="divider-or">o cargá manualmente</div>
     <div id="rowsContainer"></div>
     <button class="add-row-btn" id="addRowBtn">+ Agregar destino</button>
+    <label style="margin-top:14px;">Tamaño de la letra en la tabla</label>
+    <div class="el-controls">
+      <div class="sizebtn" id="cronoRowsFontMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Fecha · Destino · REF</span>
+      <div class="sizebtn" id="cronoRowsFontPlus">+</div>
+    </div>
   </div>
 
   <div class="card">
@@ -381,6 +392,13 @@
       <button type="button" id="anResetBtn">↺ Reiniciar posiciones</button>
     </div>
     <div class="hint">El bloqueo aplica solo a la foto de fondo. El logo, el slogan y los textos siempre se pueden mover.</div>
+
+    <label style="margin-top:14px;">Tamaño general del texto (título 1, título 2, precio y fecha juntos)</label>
+    <div class="el-controls">
+      <div class="sizebtn" id="anGlobalTextMinus">−</div>
+      <span style="font-size:14.5px; opacity:0.8;">Agrandar / achicar todo el texto</span>
+      <div class="sizebtn" id="anGlobalTextPlus">+</div>
+    </div>
     <div class="stage-wrap">
       <div class="stage" id="anStage">
         <div class="stage-inner" id="anInner">
@@ -572,6 +590,7 @@ let rows = [
 ];
 let columns = 1;
 let footerScale = 1;
+let rowsFontScale = 1;
 
 // Font loading with a hard timeout fallback so the app never hangs forever
 // waiting on a network request (e.g. if Google Fonts is blocked).
@@ -740,6 +759,16 @@ document.querySelectorAll('.presets button').forEach(btn => {
   });
 });
 document.getElementById('titleInput').addEventListener('input', () => scheduleRender());
+
+// ---------- Rows table font size controls ----------
+document.getElementById('cronoRowsFontMinus').addEventListener('click', () => {
+  rowsFontScale = Math.max(0.6, rowsFontScale - 0.1);
+  scheduleRender();
+});
+document.getElementById('cronoRowsFontPlus').addEventListener('click', () => {
+  rowsFontScale = Math.min(1.8, rowsFontScale + 0.1);
+  scheduleRender();
+});
 
 // ---------- Footer size controls ----------
 document.getElementById('cronoFooterMinus').addEventListener('click', () => {
@@ -1041,7 +1070,7 @@ async function renderPiece() {
     roundRect(ctx, 55, panelY0, W-110, panelH, 18);
     ctx.fill();
 
-    const baseSize = rowH >= 40 ? 26 : Math.floor(rowH*0.55);
+    const baseSize = (rowH >= 40 ? 26 : Math.floor(rowH*0.55)) * rowsFontScale;
     const fechaColW = 165, refColW = 130;
     const destX0 = 55+40+fechaColW+20;
     const destX1 = W-55-40-refColW-20;
@@ -1051,9 +1080,9 @@ async function renderPiece() {
     const yStart = panelY0 + panelH/2 - (n-1)*rowH/2;
     rows.forEach((row, i) => {
       const cy = yStart + i*rowH;
-      const fechaSize = fitFontSize(ctx, row.fecha, 'Hackney', 400, fechaColW, baseSize, 14);
-      const destSize = fitFontSize(ctx, row.destino, 'Hackney', 400, destColW, baseSize+4, 16);
-      const refSize = fitFontSize(ctx, `REF ${row.ref}`, 'Hackney', 400, refColW, baseSize, 14);
+      const fechaSize = fitFontSize(ctx, row.fecha, 'Hackney', 400, fechaColW, baseSize, 12);
+      const destSize = fitFontSize(ctx, row.destino, 'Hackney', 400, destColW, baseSize+4, 13);
+      const refSize = fitFontSize(ctx, `REF ${row.ref}`, 'Hackney', 400, refColW, baseSize, 12);
 
       ctx.fillStyle = "#141419";
       ctx.textAlign = "left";
@@ -1090,7 +1119,7 @@ async function renderPiece() {
     roundRect(ctx, 55, panelY0, W-110, panelH, 18);
     ctx.fill();
 
-    const baseSize = rowH >= 34 ? 22 : Math.max(14, Math.floor(rowH*0.5));
+    const baseSize = (rowH >= 34 ? 22 : Math.max(14, Math.floor(rowH*0.5))) * rowsFontScale;
     const colGap = 30;
     const colW = (W-110-colGap)/2;
     const fechaColW = 85, refColW = 70;
@@ -1214,17 +1243,21 @@ function scheduleRender(delay = 350) {
   renderTimer = setTimeout(() => { renderPieceSafe(); }, delay);
 }
 
-document.getElementById('generateBtn').addEventListener('click', async () => {
-  const loadingMsg = document.getElementById('loadingMsg');
-  loadingMsg.style.display = 'block';
-  clearTimeout(renderTimer);
-  await renderPieceSafe();
-  loadingMsg.style.display = 'none';
-  document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
-  // auto-download right after generating, so there's no extra step
+document.getElementById('generateBtn').addEventListener('click', () => {
+  // Trigger the download synchronously first (using whatever is already on the
+  // canvas from the live auto-preview) so the browser never blocks it as a
+  // "not a real click" download — then refresh the preview in the background.
   const canvas = document.getElementById('workCanvas');
   const titleSlug = (document.getElementById('titleInput').value || 'pieza').toLowerCase().replace(/[^a-z0-9]+/g,'_');
   triggerDownload(canvas, `caramelo_${titleSlug}.png`);
+
+  const loadingMsg = document.getElementById('loadingMsg');
+  loadingMsg.style.display = 'block';
+  clearTimeout(renderTimer);
+  renderPieceSafe().finally(() => {
+    loadingMsg.style.display = 'none';
+    document.getElementById('previewCard').scrollIntoView({behavior:'smooth', block:'start'});
+  });
 });
 
 document.getElementById('downloadBtn').addEventListener('click', () => {
@@ -1263,6 +1296,7 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
 
   let photoLocked = false;
   let anFooterScale = 1;
+  let anGlobalTextScale = 1;
 
   // ---------- DOM refs ----------
   const elLogo = document.getElementById('elLogo');
@@ -1393,12 +1427,12 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     bgImgEl.style.transform = `translate(${cx - dispW/2}px, ${cy - dispH/2}px)`;
   }
 
-  function layoutElement(domEl, state) {
+  function layoutElement(domEl, state, extraScale) {
     const x = state.xf * AW;
     const y = state.yf * AH;
     domEl.style.left = x + 'px';
     domEl.style.top = y + 'px';
-    domEl.style.transform = `translate(-50%, -50%) scale(${state.scale})`;
+    domEl.style.transform = `translate(-50%, -50%) scale(${state.scale * (extraScale || 1)})`;
   }
 
   function layoutAll() {
@@ -1406,10 +1440,10 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     layoutPhoto();
     layoutElement(elLogo, els.logo);
     layoutElement(elSlogan, els.slogan);
-    layoutElement(elTitle1, els.title1);
-    layoutElement(elTitle2, els.title2);
-    layoutElement(elPriceBadge, els.price);
-    layoutElement(elDateBadge, els.date);
+    layoutElement(elTitle1, els.title1, anGlobalTextScale);
+    layoutElement(elTitle2, els.title2, anGlobalTextScale);
+    layoutElement(elPriceBadge, els.price, anGlobalTextScale);
+    layoutElement(elDateBadge, els.date, anGlobalTextScale);
   }
   window.addEventListener('resize', () => { layoutAll(); });
 
@@ -1521,6 +1555,7 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   document.getElementById('anResetBtn').addEventListener('click', () => {
     Object.assign(photoState, DEFAULT_PHOTO);
     Object.keys(DEFAULTS).forEach(k => Object.assign(els[k], JSON.parse(JSON.stringify(DEFAULTS[k]))));
+    anGlobalTextScale = 1;
     layoutAll();
     scheduleAnRender();
   });
@@ -1542,22 +1577,40 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     scheduleAnRender();
   });
 
-  function bindSizeButtons(minusId, plusId, state, domEl, step) {
+  function bindSizeButtons(minusId, plusId, state, domEl, step, useGlobalScale) {
     document.getElementById(minusId).addEventListener('click', () => {
       state.scale = clamp(state.scale - step, 0.3, 4);
-      layoutElement(domEl, state); scheduleAnRender();
+      layoutElement(domEl, state, useGlobalScale ? anGlobalTextScale : 1); scheduleAnRender();
     });
     document.getElementById(plusId).addEventListener('click', () => {
       state.scale = clamp(state.scale + step, 0.3, 4);
-      layoutElement(domEl, state); scheduleAnRender();
+      layoutElement(domEl, state, useGlobalScale ? anGlobalTextScale : 1); scheduleAnRender();
     });
   }
-  bindSizeButtons('anLogoMinus', 'anLogoPlus', els.logo, elLogo, 0.08);
-  bindSizeButtons('anSloganMinus', 'anSloganPlus', els.slogan, elSlogan, 0.08);
-  bindSizeButtons('anTitle1Minus', 'anTitle1Plus', els.title1, elTitle1, 0.08);
-  bindSizeButtons('anTitle2Minus', 'anTitle2Plus', els.title2, elTitle2, 0.08);
-  bindSizeButtons('anPriceMinus', 'anPricePlus', els.price, elPriceBadge, 0.08);
-  bindSizeButtons('anDateMinus', 'anDatePlus', els.date, elDateBadge, 0.08);
+  bindSizeButtons('anLogoMinus', 'anLogoPlus', els.logo, elLogo, 0.08, false);
+  bindSizeButtons('anSloganMinus', 'anSloganPlus', els.slogan, elSlogan, 0.08, false);
+  bindSizeButtons('anTitle1Minus', 'anTitle1Plus', els.title1, elTitle1, 0.08, true);
+  bindSizeButtons('anTitle2Minus', 'anTitle2Plus', els.title2, elTitle2, 0.08, true);
+  bindSizeButtons('anPriceMinus', 'anPricePlus', els.price, elPriceBadge, 0.08, true);
+  bindSizeButtons('anDateMinus', 'anDatePlus', els.date, elDateBadge, 0.08, true);
+
+  // ---------- global text size control (Título 1, Título 2, precio y fecha a la vez) ----------
+  document.getElementById('anGlobalTextMinus').addEventListener('click', () => {
+    anGlobalTextScale = Math.max(0.5, anGlobalTextScale - 0.08);
+    layoutElement(elTitle1, els.title1, anGlobalTextScale);
+    layoutElement(elTitle2, els.title2, anGlobalTextScale);
+    layoutElement(elPriceBadge, els.price, anGlobalTextScale);
+    layoutElement(elDateBadge, els.date, anGlobalTextScale);
+    scheduleAnRender();
+  });
+  document.getElementById('anGlobalTextPlus').addEventListener('click', () => {
+    anGlobalTextScale = Math.min(2.5, anGlobalTextScale + 0.08);
+    layoutElement(elTitle1, els.title1, anGlobalTextScale);
+    layoutElement(elTitle2, els.title2, anGlobalTextScale);
+    layoutElement(elPriceBadge, els.price, anGlobalTextScale);
+    layoutElement(elDateBadge, els.date, anGlobalTextScale);
+    scheduleAnRender();
+  });
 
   function bindColor(inputId, target, key, cssProp, domEl) {
     document.getElementById(inputId).addEventListener('input', (e) => {
@@ -1657,14 +1710,14 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
 
     // title1
     if (els.title1.text) {
-      const size = 70 * (canvasW/AW) * els.title1.scale;
+      const size = 70 * (canvasW/AW) * els.title1.scale * anGlobalTextScale;
       ctx.font = anFont(`'${els.title1.font}', 'Hackney'`, 400, size);
       anStrokeText(ctx, els.title1.text, els.title1.xf*canvasW, els.title1.yf*canvasH, '#ffffff', '#0a0a0a', 4*ANSCALE);
     }
 
     // title2
     if (els.title2.visible !== false && els.title2.text) {
-      const size = 50 * (canvasW/AW) * els.title2.scale;
+      const size = 50 * (canvasW/AW) * els.title2.scale * anGlobalTextScale;
       ctx.font = anFont(`'${els.title2.font}', 'Hackney'`, 400, size);
       anStrokeText(ctx, els.title2.text, els.title2.xf*canvasW, els.title2.yf*canvasH, '#ffffff', '#0a0a0a', 3*ANSCALE);
     }
@@ -1672,12 +1725,12 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     // badge drawer
     function drawBadge(state) {
       const lines = state.text.split('\n').filter(l => l.length);
-      const baseFont = 26 * (canvasW/AW) * state.scale;
+      const baseFont = 26 * (canvasW/AW) * state.scale * anGlobalTextScale;
       ctx.font = anFont('Poppins', 800, baseFont);
       let maxW = 0;
       lines.forEach(l => { maxW = Math.max(maxW, ctx.measureText(l).width); });
-      const padX = 26 * (canvasW/AW) * state.scale;
-      const padY = 18 * (canvasW/AW) * state.scale;
+      const padX = 26 * (canvasW/AW) * state.scale * anGlobalTextScale;
+      const padY = 18 * (canvasW/AW) * state.scale * anGlobalTextScale;
       const lineH = baseFont * 1.25;
       const boxW = maxW + padX*2;
       const boxH = lines.length*lineH + padY*2;
@@ -1729,15 +1782,21 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     anRenderTimer = setTimeout(() => { renderAnuncio().catch(console.error); }, delay);
   }
 
-  document.getElementById('anGenerateBtn').addEventListener('click', async () => {
+  document.getElementById('anGenerateBtn').addEventListener('click', () => {
+    // Trigger the download synchronously, right inside the click handler, using
+    // whatever is already on the canvas (kept fresh by the live auto-preview).
+    // Downloads triggered after an `await` can be silently blocked by the browser
+    // because the "real click" trust window has passed by then.
+    triggerAnDownload();
+
+    // Then refresh the visible preview in the background (non-blocking).
     const loadingMsg = document.getElementById('anLoadingMsg');
     loadingMsg.style.display = 'block';
     clearTimeout(anRenderTimer);
-    await renderAnuncio().catch(console.error);
-    loadingMsg.style.display = 'none';
-    document.getElementById('anPreviewCard').scrollIntoView({behavior:'smooth', block:'start'});
-    // auto-download right after generating, so there's no extra step
-    triggerAnDownload();
+    renderAnuncio().catch(console.error).finally(() => {
+      loadingMsg.style.display = 'none';
+      document.getElementById('anPreviewCard').scrollIntoView({behavior:'smooth', block:'start'});
+    });
   });
 
   function isIOSDevice() {
