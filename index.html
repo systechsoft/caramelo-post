@@ -389,6 +389,63 @@
     background: var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:600; cursor:pointer;
   }
   .chip.active { background:#ff2e9a; border-color:#ff2e9a; color:white; }
+
+  /* ---- Video tab: master multi-track timeline ---- */
+  .v-master-timeline {
+    position:relative; margin-top:14px; padding-top:14px;
+  }
+  .v-master-playhead {
+    position:absolute; top:0; bottom:0; left:0; width:2px; background:#ffffff;
+    z-index:5; pointer-events:none;
+  }
+  .v-master-playhead::before {
+    content:""; position:absolute; top:-6px; left:-6px; width:14px; height:14px;
+    background:#ffffff; border-radius:50%;
+  }
+  .v-track-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .v-track-label { width:22px; text-align:center; font-size:15px; flex-shrink:0; }
+  .v-track {
+    position:relative; flex:1; height:40px; border-radius:8px;
+    background: var(--input-bg); border:1px solid var(--input-border); overflow:hidden;
+  }
+  .v-track-disabled {
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; opacity:0.45; color:var(--text-main);
+  }
+  .v-clip-block {
+    position:absolute; top:2px; bottom:2px; border-radius:6px;
+    background: linear-gradient(135deg,#ff2e9a,#ff8c28);
+    display:flex; align-items:center; justify-content:center;
+    font-size:10.5px; color:white; font-weight:700; overflow:hidden;
+    border:2px solid transparent; touch-action:none;
+  }
+  .v-clip-block.selected { border-color:#fff; }
+  .v-clip-edge {
+    position:absolute; top:0; bottom:0; width:12px; background:rgba(255,255,255,0.4);
+    cursor:ew-resize; touch-action:none;
+  }
+  .v-clip-edge.left { left:0; border-radius:6px 0 0 6px; }
+  .v-clip-edge.right { right:0; border-radius:0 6px 6px 0; }
+  .v-transition-mark {
+    position:absolute; top:0; bottom:0; width:4px; background:#fff;
+    opacity:0.85; z-index:2;
+  }
+  .v-text-block {
+    position:absolute; top:2px; bottom:2px; border-radius:6px;
+    background: rgba(255,140,40,0.55); border:1px solid #ff8c28;
+    font-size:10px; color:white; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; padding:0 4px; touch-action:none;
+  }
+
+  /* ---- format/aspect selector ---- */
+  .aspect-grid { display:flex; gap:8px; margin-top:8px; }
+  .aspect-btn {
+    flex:1; padding:10px 4px; border-radius:10px; border:1px solid var(--input-border);
+    background: var(--input-bg); color:var(--text-main); font-size:11.5px; font-weight:700; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .aspect-btn.active { background:#ff2e9a; border-color:#ff2e9a; color:white; }
+  .aspect-shape { border:2px solid currentColor; border-radius:2px; }
 </style>
 </head>
 <body>
@@ -672,31 +729,23 @@ TODO INCLUIDO</textarea>
   <div class="card" id="vidEngineStatus" style="display:none;"></div>
 
   <div class="card">
-    <h2><span class="num">1</span> Clips (hasta 8)</h2>
+    <h2><span class="num">1</span> Formato</h2>
+    <div class="aspect-grid">
+      <div class="aspect-btn active" data-aspect="9:16"><div class="aspect-shape" style="width:14px;height:24px;"></div>9:16</div>
+      <div class="aspect-btn" data-aspect="1:1"><div class="aspect-shape" style="width:20px;height:20px;"></div>1:1</div>
+      <div class="aspect-btn" data-aspect="4:5"><div class="aspect-shape" style="width:16px;height:20px;"></div>4:5</div>
+      <div class="aspect-btn" data-aspect="16:9"><div class="aspect-shape" style="width:24px;height:14px;"></div>16:9</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Clips (hasta 8)</h2>
     <div id="vidClipsContainer"></div>
     <label class="photo-drop" id="vidDrop" style="margin-top:6px;">
       <span id="vidDropLabel">+ Agregar clip</span>
       <input type="file" id="vidFileInput" accept="video/*">
     </label>
-    <div class="hint">Arrastrá ⠿ para reordenar. Cada clip se puede recortar por separado. Hasta 3 minutos en total entre todos.</div>
-  </div>
-
-  <video id="vidPreview" style="display:none;"></video>
-
-  <div class="card" id="vidTrimCard" style="display:none;">
-    <h2><span class="num">2</span> Recortar <span id="vidTrimClipName" style="opacity:0.7; font-weight:400; font-size:13px;"></span></h2>
-    <div class="hint">Arrastrá las manijas rosadas para elegir dónde empieza y termina este clip.</div>
-    <div class="v-timeline" id="vidTimeline">
-      <div class="v-timeline-region" id="vidTrimRegion">
-        <div class="v-timeline-handle" id="vidHandleStart">◀</div>
-        <div class="v-timeline-handle" id="vidHandleEnd">▶</div>
-      </div>
-    </div>
-    <div class="time-labels">
-      <span id="vidTimeLabelStart">0:00</span>
-      <span id="vidTrimDurLabel" style="font-weight:700;">0:10</span>
-      <span id="vidTimeLabelEnd">0:10</span>
-    </div>
+    <div class="hint">Arrastrá ⠿ para reordenar. Hasta 3 minutos en total entre todos.</div>
   </div>
 
   <div class="card" id="vidTransitionCard" style="display:none;">
@@ -710,15 +759,41 @@ TODO INCLUIDO</textarea>
     <div class="filter-grid" id="vidFilterGrid"></div>
   </div>
 
-  <div class="card" id="vidPreviewCard" style="display:none;">
-    <h2><span class="num">5</span> Vista previa (arrastrá los textos)</h2>
+  <video id="vidPreview" style="display:none;"></video>
+  <video id="vidPreviewB" style="display:none;"></video>
+
+  <div class="card" id="vidMasterCard" style="display:none;">
+    <h2><span class="num">5</span> Vista previa y línea de tiempo maestra</h2>
+
     <div class="v-stage-wrap">
       <div class="v-stage" id="vidStage">
         <canvas id="vidStageCanvas"></canvas>
         <div id="vidTextsOverlay"></div>
       </div>
     </div>
-    <div class="hint">Este es un fotograma de referencia — el texto se ve exactamente en esta posición durante todo su rango de tiempo.</div>
+    <div class="hint" style="text-align:center;">Movete por la barra de abajo para revisar todo el video, texto y transiciones incluidos.</div>
+
+    <div class="v-master-timeline" id="vidMasterTimeline">
+      <div class="v-master-playhead" id="vidPlayhead"></div>
+
+      <div class="v-track-row">
+        <span class="v-track-label">🎬</span>
+        <div class="v-track v-track-video" id="vidTrackVideo"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">🎵</span>
+        <div class="v-track v-track-disabled">Próximamente</div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">📝</span>
+        <div class="v-track v-track-texts" id="vidTrackTexts"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">😀</span>
+        <div class="v-track v-track-disabled">Próximamente</div>
+      </div>
+    </div>
+    <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00</span></div>
   </div>
 
   <div class="card" id="vidTextsCard" style="display:none;">
@@ -2147,15 +2222,15 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 </script>
 <script>
 // ============================================================
-// Caramelo Tours — Pestaña Video (Fase 2: múltiples clips,
-// reordenar, recortar cada uno, transiciones, + Fase 1b: textos)
+// Caramelo Tours — Pestaña Video (Fase 2b: timeline maestro de
+// 4 pistas, vista previa con fundido real, formato/aspecto)
 // ============================================================
 
 (function () {
   const VIDEO_ENGINE_BASE_URL = "https://systechsoft.github.io/caramelo-post/motor-video/";
   const MAX_CLIPS = 8;
   const MAX_TEXTS = 4;
-  const MAX_TOTAL_SECONDS = 180; // 3 minutes
+  const MAX_TOTAL_SECONDS = 180;
   const TRANSITION_DURATION = 0.6;
 
   let ffmpeg = null;
@@ -2167,15 +2242,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   let selectedClipId = null;
 
   const TRANSITIONS = {
-    fade:       "Fundido",
-    slideleft:  "Deslizar ←",
-    slideright: "Deslizar →",
-    slideup:    "Deslizar ↑",
-    slidedown:  "Deslizar ↓",
-    circleopen: "Círculo",
-    wipeleft:   "Cortina",
-    dissolve:   "Difuminado",
-    none:       "Corte seco",
+    fade: "Fundido", slideleft: "Deslizar ←", slideright: "Deslizar →",
+    slideup: "Deslizar ↑", slidedown: "Deslizar ↓", circleopen: "Círculo",
+    wipeleft: "Cortina", dissolve: "Difuminado", none: "Corte seco",
   };
   let selectedTransition = "fade";
 
@@ -2192,6 +2261,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   };
   let selectedFilter = "none";
 
+  const ASPECTS = { "9:16": 9/16, "1:1": 1, "4:5": 4/5, "16:9": 16/9 };
+  let selectedAspect = "9:16";
+
   // texts: {id, content, fontFamily, fontFile, start, end, xf, yf, scale}
   let texts = [];
   let textIdCounter = 0;
@@ -2199,23 +2271,14 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     { xf: 0.5, yf: 0.75 }, { xf: 0.5, yf: 0.62 }, { xf: 0.5, yf: 0.85 }, { xf: 0.5, yf: 0.50 },
   ];
 
-  let totalDuration = 0;   // final joined timeline duration, used for text timing
-  let trimStart = 0, trimEnd = 0; // for the currently-selected clip's trim editor
-  let previewVideoW = 1080, previewVideoH = 1920;
+  let totalDuration = 0;
+  let playheadTime = 0;
 
   // ---------- DOM ----------
   const videoInput = document.getElementById('vidFileInput');
-  const videoPreview = document.getElementById('vidPreview');
+  const videoA = document.getElementById('vidPreview');
+  const videoB = document.getElementById('vidPreviewB');
   const clipsContainer = document.getElementById('vidClipsContainer');
-  const vidTimeline = document.getElementById('vidTimeline');
-  const trimRegion = document.getElementById('vidTrimRegion');
-  const handleStart = document.getElementById('vidHandleStart');
-  const handleEnd = document.getElementById('vidHandleEnd');
-  const timeLabelStart = document.getElementById('vidTimeLabelStart');
-  const timeLabelEnd = document.getElementById('vidTimeLabelEnd');
-  const trimDurLabel = document.getElementById('vidTrimDurLabel');
-  const trimCard = document.getElementById('vidTrimCard');
-  const trimClipName = document.getElementById('vidTrimClipName');
   const transitionCard = document.getElementById('vidTransitionCard');
   const transitionGrid = document.getElementById('vidTransitionGrid');
   const filterGrid = document.getElementById('vidFilterGrid');
@@ -2227,13 +2290,19 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   const resultCard = document.getElementById('vidResultCard');
   const downloadBtn = document.getElementById('vidDownloadBtn');
   const engineStatus = document.getElementById('vidEngineStatus');
-  const previewCard = document.getElementById('vidPreviewCard');
+  const masterCard = document.getElementById('vidMasterCard');
   const textsCard = document.getElementById('vidTextsCard');
   const stage = document.getElementById('vidStage');
   const stageCanvas = document.getElementById('vidStageCanvas');
   const textsOverlay = document.getElementById('vidTextsOverlay');
   const textsContainer = document.getElementById('vidTextsContainer');
   const addTextBtn = document.getElementById('vidAddTextBtn');
+  const masterTimeline = document.getElementById('vidMasterTimeline');
+  const playheadEl = document.getElementById('vidPlayhead');
+  const trackVideo = document.getElementById('vidTrackVideo');
+  const trackTexts = document.getElementById('vidTrackTexts');
+  const masterTimeLabel = document.getElementById('vidMasterTimeLabel');
+  const masterTotalLabel = document.getElementById('vidMasterTotalLabel');
 
   function fmtTime(s) {
     s = Math.max(0, s);
@@ -2241,16 +2310,22 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     const sec = Math.floor(s % 60);
     return `${m}:${sec.toString().padStart(2, '0')}`;
   }
-
   function clipDuration(c) { return c.trimEnd - c.trimStart; }
 
-  function recomputeTotalDuration() {
-    if (clips.length === 0) { totalDuration = 0; return; }
-    const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
-    const nTransitions = Math.max(0, clips.length - 1);
-    const overlap = selectedTransition === 'none' ? 0 : TRANSITION_DURATION * nTransitions;
-    totalDuration = Math.max(0.1, sumTrimmed - overlap);
+  // ================= ASPECT / FORMAT =================
+  document.querySelectorAll('.aspect-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedAspect = btn.dataset.aspect;
+      updateStageAspect();
+    });
+  });
+  function updateStageAspect() {
+    const ratio = ASPECTS[selectedAspect] || 9/16;
+    stage.style.aspectRatio = `${ratio} / 1`;
   }
+  updateStageAspect();
 
   // ================= FILTER GRID =================
   function renderFilterGrid() {
@@ -2278,24 +2353,45 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       el.addEventListener('click', () => {
         selectedTransition = key;
         renderTransitionGrid();
-        recomputeTotalDuration();
+        recomputeLayout();
       });
       transitionGrid.appendChild(el);
     });
   }
   renderTransitionGrid();
 
-  // ================= CLIP MANAGEMENT =================
+  // ================= CLIP MASTER LAYOUT =================
+  // returns array of {clip, startInMaster, endInMaster} using cumulative
+  // durations minus transition overlaps (same math validated in export)
+  function computeClipLayout() {
+    const layout = [];
+    let cum = 0;
+    clips.forEach((c, i) => {
+      const d = clipDuration(c);
+      const start = i === 0 ? 0 : cum - (selectedTransition === 'none' ? 0 : TRANSITION_DURATION);
+      const end = start + d;
+      layout.push({ clip: c, start, end });
+      cum = end;
+    });
+    return layout;
+  }
+
+  function recomputeLayout() {
+    if (clips.length === 0) { totalDuration = 0; renderMasterTimeline(); return; }
+    const layout = computeClipLayout();
+    totalDuration = layout[layout.length - 1].end;
+    if (playheadTime > totalDuration) playheadTime = totalDuration;
+    renderMasterTimeline();
+    updateMasterPreview();
+  }
+
+  // ================= EXTRACT METADATA =================
   function extractClipMetadata(file) {
     return new Promise((resolve) => {
       const url = URL.createObjectURL(file);
       const v = document.createElement('video');
-      v.preload = 'metadata';
-      v.muted = true;
-      v.src = url;
-      v.onloadedmetadata = () => {
-        v.currentTime = Math.min(0.1, (v.duration || 1) / 2);
-      };
+      v.preload = 'metadata'; v.muted = true; v.src = url;
+      v.onloadedmetadata = () => { v.currentTime = Math.min(0.1, (v.duration || 1) / 2); };
       v.onseeked = () => {
         let thumb = null;
         try {
@@ -2307,16 +2403,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           const nw = vw * scale, nh = vh * scale;
           ctx.drawImage(v, (80 - nw) / 2, (80 - nh) / 2, nw, nh);
           thumb = c.toDataURL('image/jpeg', 0.7);
-        } catch (err) { /* ignore, fallback to no thumb */ }
-        resolve({
-          duration: v.duration || 1,
-          videoW: v.videoWidth || 1080,
-          videoH: v.videoHeight || 1920,
-          thumb,
-        });
+        } catch (err) {}
+        resolve({ duration: v.duration || 1, videoW: v.videoWidth || 1080, videoH: v.videoHeight || 1920, thumb });
         URL.revokeObjectURL(url);
       };
-      // safety net in case metadata/seek events never fire on some browsers
       setTimeout(() => resolve({ duration: 1, videoW: 1080, videoH: 1920, thumb: null }), 4000);
     });
   }
@@ -2325,36 +2415,27 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     const file = e.target.files[0];
     videoInput.value = '';
     if (!file) return;
-    if (clips.length >= MAX_CLIPS) {
-      alert(`Máximo ${MAX_CLIPS} clips.`);
-      return;
-    }
+    if (clips.length >= MAX_CLIPS) { alert(`Máximo ${MAX_CLIPS} clips.`); return; }
     const meta = await extractClipMetadata(file);
     const clip = {
-      id: clipIdCounter++,
-      file,
-      name: file.name,
-      duration: meta.duration,
-      trimStart: 0,
-      trimEnd: meta.duration,
-      videoW: meta.videoW,
-      videoH: meta.videoH,
-      thumb: meta.thumb,
+      id: clipIdCounter++, file, name: file.name, duration: meta.duration,
+      trimStart: 0, trimEnd: meta.duration, videoW: meta.videoW, videoH: meta.videoH, thumb: meta.thumb,
     };
     clips.push(clip);
-    recomputeTotalDuration();
     renderClipsList();
-    if (clips.length === 1) selectClip(clip.id);
+    recomputeLayout();
+    if (!selectedClipId) selectedClipId = clip.id;
 
-    previewCard.style.display = 'block';
+    masterCard.style.display = 'block';
     textsCard.style.display = 'block';
     transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
     if (texts.length === 0) addText();
+    renderTextsList();
   });
 
   function renderClipsList() {
     clipsContainer.innerHTML = '';
-    clips.forEach((c, idx) => {
+    clips.forEach((c) => {
       const item = document.createElement('div');
       item.className = 'clip-item' + (c.id === selectedClipId ? ' selected' : '');
       item.dataset.id = c.id;
@@ -2366,182 +2447,260 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           <div class="name">${c.name}</div>
           <div class="dur">${fmtTime(clipDuration(c))}</div>
         </div>
-        <div class="clip-actions">
-          <button class="del" title="Quitar">✕</button>
-        </div>
+        <div class="clip-actions"><button class="del" title="Quitar">✕</button></div>
       `;
-      item.querySelector('.clip-info').addEventListener('click', () => selectClip(c.id));
+      item.querySelector('.clip-info').addEventListener('click', () => { selectedClipId = c.id; renderClipsList(); renderMasterTimeline(); });
       item.querySelector('.del').addEventListener('click', () => removeClip(c.id));
       attachClipReorder(item, c.id);
       clipsContainer.appendChild(item);
     });
-    const totalLabel = document.getElementById('vidDropLabel');
-    if (clips.length > 0) {
-      totalLabel.textContent = `+ Agregar clip (${clips.length}/${MAX_CLIPS})`;
-    }
+    const label = document.getElementById('vidDropLabel');
+    if (clips.length > 0) label.textContent = `+ Agregar clip (${clips.length}/${MAX_CLIPS})`;
   }
 
   function attachClipReorder(item, id) {
     const handle = item.querySelector('.handle');
-    let dragging = false;
-    let startY = 0;
-
+    let dragging = false, startY = 0;
     handle.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      startY = e.clientY;
+      dragging = true; startY = e.clientY;
       try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-      item.style.zIndex = 10;
-      e.stopPropagation();
+      item.style.zIndex = 10; e.stopPropagation();
     });
     handle.addEventListener('pointermove', (e) => {
       if (!dragging) return;
       const dy = e.clientY - startY;
-      item.style.transform = `translateY(${dy}px)`;
-      item.style.opacity = '0.85';
-
-      // figure out which sibling we're hovering over and reorder live
+      item.style.transform = `translateY(${dy}px)`; item.style.opacity = '0.85';
       const siblings = [...clipsContainer.children];
       const myIndex = siblings.indexOf(item);
       const itemRect = item.getBoundingClientRect();
       const midY = itemRect.top + itemRect.height / 2 + dy;
-
       for (let i = 0; i < siblings.length; i++) {
         if (siblings[i] === item) continue;
         const r = siblings[i].getBoundingClientRect();
         const sMid = r.top + r.height / 2;
-        if (i < myIndex && midY < sMid) {
+        if ((i < myIndex && midY < sMid) || (i > myIndex && midY > sMid)) {
           const fromIdx = clips.findIndex(c => c.id === id);
-          const toIdx = i;
           const [moved] = clips.splice(fromIdx, 1);
-          clips.splice(toIdx, 0, moved);
+          clips.splice(i, 0, moved);
           renderClipsList();
-          return;
-        }
-        if (i > myIndex && midY > sMid) {
-          const fromIdx = clips.findIndex(c => c.id === id);
-          const toIdx = i;
-          const [moved] = clips.splice(fromIdx, 1);
-          clips.splice(toIdx, 0, moved);
-          renderClipsList();
+          recomputeLayout();
           return;
         }
       }
       e.stopPropagation();
     });
-    function endDrag() {
-      dragging = false;
-      item.style.transform = '';
-      item.style.opacity = '';
-      item.style.zIndex = '';
-    }
+    function endDrag() { dragging = false; item.style.transform = ''; item.style.opacity = ''; item.style.zIndex = ''; }
     handle.addEventListener('pointerup', endDrag);
     handle.addEventListener('pointercancel', endDrag);
   }
 
-  function selectClip(id) {
-    const c = clips.find(x => x.id === id);
-    if (!c) return;
-    selectedClipId = id;
-    trimStart = c.trimStart;
-    trimEnd = c.trimEnd;
-    previewVideoW = c.videoW;
-    previewVideoH = c.videoH;
-    trimClipName.textContent = '— ' + c.name;
-    const url = URL.createObjectURL(c.file);
-    videoPreview.src = url;
-    videoPreview.onloadedmetadata = () => {
-      layoutTrimHandles();
-      videoPreview.currentTime = 0.001;
-      setTimeout(() => { videoPreview.currentTime = trimStart; }, 50);
-      setTimeout(drawStageFrame, 150);
-      setTimeout(drawStageFrame, 400);
-    };
-    trimCard.style.display = 'block';
-    renderClipsList();
-  }
-
   function removeClip(id) {
     clips = clips.filter(c => c.id !== id);
-    if (selectedClipId === id) {
-      selectedClipId = null;
-      trimCard.style.display = 'none';
-    }
-    recomputeTotalDuration();
+    if (selectedClipId === id) selectedClipId = clips.length ? clips[0].id : null;
     renderClipsList();
+    recomputeLayout();
     transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
-    if (clips.length > 0 && !selectedClipId) selectClip(clips[0].id);
   }
 
-  // ================= TRIM (for the selected clip) =================
-  function layoutTrimHandles() {
-    const dur = (clips.find(c => c.id === selectedClipId) || {}).duration || 1;
-    const leftPct = (trimStart / dur) * 100;
-    const rightPct = 100 - (trimEnd / dur) * 100;
-    trimRegion.style.left = leftPct + '%';
-    trimRegion.style.right = rightPct + '%';
-    timeLabelStart.textContent = fmtTime(trimStart);
-    timeLabelEnd.textContent = fmtTime(trimEnd);
-    trimDurLabel.textContent = 'dura ' + fmtTime(trimEnd - trimStart);
+  // ================= MASTER TIMELINE RENDER =================
+  function renderMasterTimeline() {
+    trackVideo.innerHTML = '';
+    trackTexts.innerHTML = '';
+    if (totalDuration <= 0) return;
+
+    const layout = computeClipLayout();
+    layout.forEach(({ clip, start, end }, i) => {
+      const block = document.createElement('div');
+      block.className = 'v-clip-block' + (clip.id === selectedClipId ? ' selected' : '');
+      block.style.left = (start / totalDuration * 100) + '%';
+      block.style.width = Math.max(0.5, (end - start) / totalDuration * 100) + '%';
+      block.textContent = (i + 1);
+      block.innerHTML += `<div class="v-clip-edge left"></div><div class="v-clip-edge right"></div>`;
+      block.addEventListener('pointerdown', (e) => {
+        if (e.target.classList.contains('v-clip-edge')) return;
+        selectedClipId = clip.id;
+        renderClipsList();
+        renderMasterTimeline();
+      });
+      attachClipEdgeDrag(block.querySelector('.left'), clip, true);
+      attachClipEdgeDrag(block.querySelector('.right'), clip, false);
+      trackVideo.appendChild(block);
+
+      if (i > 0 && selectedTransition !== 'none') {
+        const mark = document.createElement('div');
+        mark.className = 'v-transition-mark';
+        mark.style.left = (start / totalDuration * 100) + '%';
+        trackVideo.appendChild(mark);
+      }
+    });
+
+    texts.forEach((t, idx) => {
+      const block = document.createElement('div');
+      block.className = 'v-text-block';
+      block.style.left = (t.start / totalDuration * 100) + '%';
+      block.style.width = Math.max(1, (t.end - t.start) / totalDuration * 100) + '%';
+      block.textContent = `T${idx + 1}`;
+      attachTextBlockDrag(block, t);
+      trackTexts.appendChild(block);
+    });
+
+    masterTotalLabel.textContent = fmtTime(totalDuration);
+    layoutPlayhead();
   }
 
-  function attachTrimHandle(handleEl, isStart) {
+  function attachClipEdgeDrag(edgeEl, clip, isLeft) {
     let dragging = false;
-    handleEl.addEventListener('pointerdown', (e) => {
+    edgeEl.addEventListener('pointerdown', (e) => {
       dragging = true;
-      try { handleEl.setPointerCapture(e.pointerId); } catch (err) {}
+      try { edgeEl.setPointerCapture(e.pointerId); } catch (err) {}
       e.stopPropagation();
     });
-    handleEl.addEventListener('pointermove', (e) => {
+    edgeEl.addEventListener('pointermove', (e) => {
       if (!dragging) return;
-      const c = clips.find(x => x.id === selectedClipId);
-      if (!c) return;
-      const rect = vidTimeline.getBoundingClientRect();
+      const rect = trackVideo.getBoundingClientRect();
       const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const t = frac * c.duration;
-      if (isStart) {
-        trimStart = Math.max(0, Math.min(t, trimEnd - 0.3));
-        videoPreview.currentTime = trimStart;
-      } else {
-        trimEnd = Math.min(c.duration, Math.max(t, trimStart + 0.3));
-        videoPreview.currentTime = trimEnd;
-      }
-      c.trimStart = trimStart;
-      c.trimEnd = trimEnd;
-      layoutTrimHandles();
-      recomputeTotalDuration();
+      const layout = computeClipLayout();
+      const entry = layout.find(l => l.clip.id === clip.id);
+      if (!entry) return;
+      const tInMaster = frac * totalDuration;
+      const localT = clip.trimStart + (tInMaster - entry.start);
+      if (isLeft) clip.trimStart = Math.max(0, Math.min(localT, clip.trimEnd - 0.3));
+      else clip.trimEnd = Math.min(clip.duration, Math.max(localT, clip.trimStart + 0.3));
+      recomputeLayout();
       renderClipsList();
       e.stopPropagation();
     });
-    handleEl.addEventListener('pointerup', () => { dragging = false; });
-    handleEl.addEventListener('pointercancel', () => { dragging = false; });
+    function end() { dragging = false; }
+    edgeEl.addEventListener('pointerup', end);
+    edgeEl.addEventListener('pointercancel', end);
   }
-  attachTrimHandle(handleStart, true);
-  attachTrimHandle(handleEnd, false);
 
-  videoPreview.addEventListener('seeked', drawStageFrame);
-  videoPreview.addEventListener('loadeddata', drawStageFrame);
+  function attachTextBlockDrag(el, t) {
+    let dragging = false, mode = null, startX = 0, origStart = 0, origEnd = 0;
+    el.addEventListener('pointerdown', (e) => {
+      dragging = true; mode = 'move'; startX = e.clientX; origStart = t.start; origEnd = t.end;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      e.stopPropagation();
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging || !totalDuration) return;
+      const rect = trackTexts.getBoundingClientRect();
+      const dxFrac = (e.clientX - startX) / rect.width;
+      const dt = dxFrac * totalDuration;
+      const dur = origEnd - origStart;
+      let newStart = Math.max(0, Math.min(origStart + dt, totalDuration - dur));
+      t.start = newStart; t.end = newStart + dur;
+      renderMasterTimeline();
+      renderTextTimeLabelFor(t);
+      e.stopPropagation();
+    });
+    function end() { dragging = false; }
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  }
 
-  // ================= LIVE PREVIEW STAGE (frame + draggable texts) =================
-  function drawStageFrame() {
-    if (!previewVideoW || !previewVideoH) return;
-    if (videoPreview.readyState < 2) return;
-    stageCanvas.width = previewVideoW;
-    stageCanvas.height = previewVideoH;
+  function renderTextTimeLabelFor(t) {
+    const label = document.querySelector(`.v-text-time-label[data-id="${t.id}"]`);
+    if (label) label.textContent = `${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s`;
+  }
+
+  // ================= PLAYHEAD =================
+  function layoutPlayhead() {
+    if (!totalDuration) { playheadEl.style.left = '0%'; return; }
+    playheadEl.style.left = (playheadTime / totalDuration * 100) + '%';
+    masterTimeLabel.textContent = fmtTime(playheadTime);
+  }
+
+  let scrubbing = false;
+  function seekFromEvent(e) {
+    if (!totalDuration) return;
+    const rect = masterTimeline.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    playheadTime = frac * totalDuration;
+    layoutPlayhead();
+    updateMasterPreview();
+  }
+  masterTimeline.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.v-clip-block') || e.target.closest('.v-text-block')) return;
+    scrubbing = true;
+    try { masterTimeline.setPointerCapture(e.pointerId); } catch (err) {}
+    seekFromEvent(e);
+  });
+  masterTimeline.addEventListener('pointermove', (e) => { if (scrubbing) seekFromEvent(e); });
+  masterTimeline.addEventListener('pointerup', () => { scrubbing = false; });
+  masterTimeline.addEventListener('pointercancel', () => { scrubbing = false; });
+
+  // ================= MASTER PREVIEW (frame compositor) =================
+  const pendingSeeks = { A: null, B: null };
+  function seekVideoTo(videoEl, key, file, localTime) {
+    return new Promise((resolve) => {
+      const needsNewSrc = videoEl.dataset.fileRef !== file.name + file.size;
+      const onSeeked = () => { videoEl.removeEventListener('seeked', onSeeked); resolve(); };
+      if (needsNewSrc) {
+        videoEl.dataset.fileRef = file.name + file.size;
+        videoEl.src = URL.createObjectURL(file);
+        videoEl.addEventListener('loadedmetadata', function onMeta() {
+          videoEl.removeEventListener('loadedmetadata', onMeta);
+          videoEl.addEventListener('seeked', onSeeked);
+          videoEl.currentTime = localTime;
+        });
+      } else {
+        videoEl.addEventListener('seeked', onSeeked);
+        videoEl.currentTime = localTime;
+      }
+    });
+  }
+
+  async function updateMasterPreview() {
+    if (clips.length === 0 || !totalDuration) return;
+    const layout = computeClipLayout();
+    let activeIdx = layout.findIndex(l => playheadTime >= l.start && playheadTime < l.end);
+    if (activeIdx === -1) activeIdx = layout.length - 1;
+    const active = layout[activeIdx];
+    const localTimeA = active.clip.trimStart + (playheadTime - active.start);
+
+    // check if we're inside a transition zone with the NEXT clip
+    let blendProgress = 0;
+    let nextEntry = null;
+    if (selectedTransition !== 'none' && activeIdx < layout.length - 1) {
+      const nextStart = layout[activeIdx + 1].start;
+      if (playheadTime >= nextStart) {
+        blendProgress = Math.min(1, (playheadTime - nextStart) / TRANSITION_DURATION);
+        nextEntry = layout[activeIdx + 1];
+      }
+    }
+
+    await seekVideoTo(videoA, 'A', active.clip.file, Math.max(0, localTimeA));
+
+    stageCanvas.width = active.clip.videoW;
+    stageCanvas.height = active.clip.videoH;
     const ctx = stageCanvas.getContext('2d');
-    try { ctx.drawImage(videoPreview, 0, 0, previewVideoW, previewVideoH); } catch (err) {}
+    ctx.clearRect(0, 0, stageCanvas.width, stageCanvas.height);
+    try { ctx.drawImage(videoA, 0, 0, stageCanvas.width, stageCanvas.height); } catch (err) {}
+
+    if (nextEntry && blendProgress > 0) {
+      const localTimeB = nextEntry.clip.trimStart + (playheadTime - nextEntry.start);
+      await seekVideoTo(videoB, 'B', nextEntry.clip.file, Math.max(0, localTimeB));
+      ctx.globalAlpha = blendProgress;
+      try { ctx.drawImage(videoB, 0, 0, stageCanvas.width, stageCanvas.height); } catch (err) {}
+      ctx.globalAlpha = 1;
+    }
+
+    renderTextsOverlayForTime(playheadTime);
   }
 
-  function renderTextsOverlay() {
+  // ================= TEXT OVERLAY ON STAGE =================
+  function renderTextsOverlayForTime(t) {
     textsOverlay.innerHTML = '';
-    texts.forEach((t) => {
+    texts.filter(tx => t >= tx.start && t <= tx.end).forEach((tx) => {
       const el = document.createElement('div');
       el.className = 'v-stage-text';
-      el.textContent = t.content;
-      el.style.left = (t.xf * 100) + '%';
-      el.style.top = (t.yf * 100) + '%';
-      el.style.fontFamily = `'${t.fontFamily}', 'Hackney'`;
-      el.style.fontSize = (22 * t.scale) + 'px';
-      attachTextDrag(el, t);
+      el.textContent = tx.content;
+      el.style.left = (tx.xf * 100) + '%';
+      el.style.top = (tx.yf * 100) + '%';
+      el.style.fontFamily = `'${tx.fontFamily}', 'Hackney'`;
+      el.style.fontSize = (22 * tx.scale) + 'px';
+      attachTextDrag(el, tx);
       textsOverlay.appendChild(el);
     });
   }
@@ -2566,7 +2725,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     el.addEventListener('pointercancel', () => { dragging = false; });
   }
 
-  // ================= TEXTS LIST =================
+  // ================= TEXTS LIST (content/font/size only — timing lives on the master timeline) =================
   function addText() {
     if (texts.length >= MAX_TEXTS) return;
     const pos = DEFAULT_POSITIONS[texts.length] || { xf: 0.5, yf: 0.7 };
@@ -2579,21 +2738,22 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     };
     texts.push(t);
     renderTextsList();
-    renderTextsOverlay();
+    renderMasterTimeline();
+    updateMasterPreview();
   }
   addTextBtn.addEventListener('click', addText);
 
   function removeText(id) {
     texts = texts.filter(t => t.id !== id);
     renderTextsList();
-    renderTextsOverlay();
+    renderMasterTimeline();
+    updateMasterPreview();
   }
 
   function populateFontSelectFor(select, current) {
     select.innerHTML = '';
     const pinned = document.createElement('option');
-    pinned.value = 'Hackney';
-    pinned.textContent = 'Hackney (por defecto)';
+    pinned.value = 'Hackney'; pinned.textContent = 'Hackney (por defecto)';
     select.appendChild(pinned);
     if (typeof FONT_MANIFEST !== 'undefined') {
       FONT_MANIFEST.forEach(f => {
@@ -2625,14 +2785,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           <span style="font-size:13px; opacity:0.8;">Tamaño</span>
           <div class="sizebtn v-text-plus">+</div>
         </div>
-        <label style="margin-top:10px;">¿Cuándo aparece y desaparece? (sobre el video final ya unido)</label>
-        <div class="v-mini-timeline">
-          <div class="v-mini-region">
-            <div class="v-mini-handle v-mini-start">◀</div>
-            <div class="v-mini-handle v-mini-end">▶</div>
-          </div>
-        </div>
-        <div class="time-labels"><span class="v-text-time-label"></span></div>
+        <div class="hint">Tiempo: <span class="v-text-time-label" data-id="${t.id}">${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s</span> — arrastrá el bloque naranja "T${idx+1}" en la línea de tiempo de arriba para moverlo.</div>
       `;
       textsContainer.appendChild(item);
 
@@ -2641,55 +2794,18 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       const minusEl = item.querySelector('.v-text-minus');
       const plusEl = item.querySelector('.v-text-plus');
       const delEl = item.querySelector('.del');
-      const miniTimeline = item.querySelector('.v-mini-timeline');
-      const miniRegion = item.querySelector('.v-mini-region');
-      const miniStart = item.querySelector('.v-mini-start');
-      const miniEnd = item.querySelector('.v-mini-end');
-      const timeLabel = item.querySelector('.v-text-time-label');
 
       populateFontSelectFor(fontEl, t.fontFamily);
 
-      contentEl.addEventListener('input', () => { t.content = contentEl.value; renderTextsOverlay(); });
+      contentEl.addEventListener('input', () => { t.content = contentEl.value; updateMasterPreview(); });
       fontEl.addEventListener('change', () => {
         const opt = fontEl.selectedOptions[0];
         t.fontFamily = opt.value; t.fontFile = opt.dataset.file || null;
-        renderTextsOverlay();
+        updateMasterPreview();
       });
-      minusEl.addEventListener('click', () => { t.scale = Math.max(0.4, t.scale - 0.1); renderTextsOverlay(); });
-      plusEl.addEventListener('click', () => { t.scale = Math.min(3, t.scale + 0.1); renderTextsOverlay(); });
+      minusEl.addEventListener('click', () => { t.scale = Math.max(0.4, t.scale - 0.1); updateMasterPreview(); });
+      plusEl.addEventListener('click', () => { t.scale = Math.min(3, t.scale + 0.1); updateMasterPreview(); });
       delEl.addEventListener('click', () => removeText(t.id));
-
-      function layoutMini() {
-        const dur = totalDuration || 10;
-        miniRegion.style.left = (t.start / dur) * 100 + '%';
-        miniRegion.style.right = (100 - (t.end / dur) * 100) + '%';
-        timeLabel.textContent = `${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s`;
-      }
-      layoutMini();
-
-      function attachMiniHandle(handleEl, isStart) {
-        let dragging = false;
-        handleEl.addEventListener('pointerdown', (e) => {
-          dragging = true;
-          try { handleEl.setPointerCapture(e.pointerId); } catch (err) {}
-          e.stopPropagation();
-        });
-        handleEl.addEventListener('pointermove', (e) => {
-          if (!dragging) return;
-          const dur = totalDuration || 10;
-          const rect = miniTimeline.getBoundingClientRect();
-          const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-          const tt = frac * dur;
-          if (isStart) t.start = Math.max(0, Math.min(tt, t.end - 0.2));
-          else t.end = Math.min(dur, Math.max(tt, t.start + 0.2));
-          layoutMini();
-          e.stopPropagation();
-        });
-        handleEl.addEventListener('pointerup', () => { dragging = false; });
-        handleEl.addEventListener('pointercancel', () => { dragging = false; });
-      }
-      attachMiniHandle(miniStart, true);
-      attachMiniHandle(miniEnd, false);
     });
   }
 
@@ -2749,15 +2865,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
   // ================= GENERATE / EXPORT =================
   generateBtn.addEventListener('click', async () => {
-    if (clips.length === 0) {
-      alert('Subí al menos un clip primero.');
-      return;
-    }
+    if (clips.length === 0) { alert('Subí al menos un clip primero.'); return; }
     const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
-    if (sumTrimmed > MAX_TOTAL_SECONDS + 5) {
-      alert('El total supera los 3 minutos permitidos. Recortá algún clip.');
-      return;
-    }
+    if (sumTrimmed > MAX_TOTAL_SECONDS + 5) { alert('El total supera los 3 minutos permitidos. Recortá algún clip.'); return; }
 
     loadingMsg.style.display = 'block';
     progressFill.style.width = '0%';
@@ -2767,8 +2877,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     try {
       await loadEngine();
 
-      // write each trimmed clip as its own input (input-level -ss/-t trimming
-      // is fast and doesn't need re-encoding just to prepare the pieces)
       const args = [];
       for (let i = 0; i < clips.length; i++) {
         const c = clips[i];
@@ -2783,20 +2891,16 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       if (clips.length === 1) {
         vOut = '0:v'; aOut = '0:a';
       } else if (selectedTransition === 'none') {
-        // simple concat, no crossfade blending
         const inputsRefs = clips.map((_, i) => `[${i}:v][${i}:a]`).join('');
         filterComplex += `${inputsRefs}concat=n=${clips.length}:v=1:a=1[vcat][acat];`;
         vOut = 'vcat'; aOut = 'acat';
       } else {
-        // chained xfade (video) + acrossfade (audio) across all clips
         let cum = clipDuration(clips[0]);
-        let vLabel = '0:v';
-        let aLabel = '0:a';
+        let vLabel = '0:v', aLabel = '0:a';
         for (let i = 1; i < clips.length; i++) {
           const d = clipDuration(clips[i]);
           const offset = Math.max(0, cum - TRANSITION_DURATION);
-          const vOutLabel = `v${i}`;
-          const aOutLabel = `a${i}`;
+          const vOutLabel = `v${i}`, aOutLabel = `a${i}`;
           filterComplex += `[${vLabel}][${i}:v]xfade=transition=${selectedTransition}:duration=${TRANSITION_DURATION}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
           filterComplex += `[${aLabel}][${i}:a]acrossfade=d=${TRANSITION_DURATION}[${aOutLabel}];`;
           vLabel = vOutLabel; aLabel = aOutLabel;
@@ -2805,39 +2909,37 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         vOut = vLabel; aOut = aLabel;
       }
 
-      // color filter, applied to the joined video stream
+      // color filter
       const filterDef = FILTERS[selectedFilter];
-      let finalVLabel = vOut;
+      let curLabel = vOut;
       if (filterDef.vf) {
-        filterComplex += `[${vOut}]${filterDef.vf}[vfilt];`;
-        finalVLabel = 'vfilt';
+        filterComplex += `[${curLabel}]${filterDef.vf}[vfilt];`;
+        curLabel = 'vfilt';
       }
 
-      // texts, applied in sequence on top of the (already joined+filtered) video
+      // crop to selected aspect ratio (centered)
+      const targetRatio = ASPECTS[selectedAspect] || 9/16;
+      filterComplex += `[${curLabel}]crop='min(iw,ih*${targetRatio})':'min(ih,iw/${targetRatio})':(iw-ow)/2:(ih-oh)/2[vcrop];`;
+      curLabel = 'vcrop';
+
+      // texts
       const activeTexts = texts.filter(t => t.content.trim());
       const baseFontSize = Math.round((clips[0].videoH || 1920) * 0.045);
-      let prevLabel = finalVLabel;
       for (let i = 0; i < activeTexts.length; i++) {
         const t = activeTexts[i];
         const fontVirtualName = await ensureFontInFFmpegFS(t.fontFamily, t.fontFile);
         const safeText = escapeDrawtext(t.content.trim());
         const size = Math.round(baseFontSize * t.scale);
         const outLabel = `txt${i}`;
-        filterComplex += `[${prevLabel}]drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${t.start},${t.end})'[${outLabel}];`;
-        prevLabel = outLabel;
+        filterComplex += `[${curLabel}]drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${t.start},${t.end})'[${outLabel}];`;
+        curLabel = outLabel;
       }
 
-      // strip trailing semicolon, map final outputs
       if (filterComplex.endsWith(';')) filterComplex = filterComplex.slice(0, -1);
 
-      if (filterComplex) {
-        args.push('-filter_complex', filterComplex);
-        args.push('-map', `[${prevLabel}]`);
-        args.push('-map', `[${aOut}]`);
-      } else {
-        args.push('-map', '0:v', '-map', '0:a');
-      }
-
+      args.push('-filter_complex', filterComplex);
+      args.push('-map', `[${curLabel}]`);
+      args.push('-map', `[${aOut}]`);
       args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
       args.push('out.mp4');
 
@@ -2878,8 +2980,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   function anchorDownloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = filename;
-    link.href = url;
+    link.download = filename; link.href = url;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
