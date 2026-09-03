@@ -350,6 +350,45 @@
     position:absolute; top:-2px; bottom:-2px; width:20px; background:#ff8c28; border-radius:6px;
     display:flex; align-items:center; justify-content:center; color:white; font-size:10px; cursor:ew-resize;
   }
+
+  /* ---- Video tab: multi-clip list ---- */
+  .clip-list { display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .clip-item {
+    display:flex; align-items:center; gap:10px;
+    background: var(--input-bg); border:1px solid var(--input-border);
+    border-radius: 12px; padding: 8px 10px;
+  }
+  .clip-item.selected { border-color:#ff2e9a; }
+  .clip-item .handle { font-size:18px; opacity:0.5; cursor:grab; touch-action:none; }
+  .clip-thumb {
+    width:48px; height:48px; border-radius:8px; flex-shrink:0;
+    background: linear-gradient(135deg,#ff2e9a,#ff8c28);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; color:white; overflow:hidden;
+  }
+  .clip-thumb img { width:100%; height:100%; object-fit:cover; }
+  .clip-info { flex:1; min-width:0; cursor:pointer; }
+  .clip-info .name { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main); }
+  .clip-info .dur { font-size:11.5px; opacity:0.65; color:var(--text-main); }
+  .clip-actions { display:flex; gap:6px; }
+  .clip-actions button {
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--input-border);
+    background:transparent; color: var(--text-main); font-size:14px; cursor:pointer;
+  }
+  .clip-actions button.del { color:#ff5a5a; border-color:rgba(255,90,90,0.4); }
+
+  .add-clip-btn {
+    width:100%; padding:14px; border-radius:12px; border:2px dashed var(--input-border);
+    background:transparent; color:var(--text-main); font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+
+  /* ---- Video tab: transition chips ---- */
+  .chip-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip {
+    padding:9px 14px; border-radius:20px; border:1px solid var(--input-border);
+    background: var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .chip.active { background:#ff2e9a; border-color:#ff2e9a; color:white; }
 </style>
 </head>
 <body>
@@ -633,18 +672,20 @@ TODO INCLUIDO</textarea>
   <div class="card" id="vidEngineStatus" style="display:none;"></div>
 
   <div class="card">
-    <h2><span class="num">1</span> Subir video</h2>
-    <label class="photo-drop" id="vidDrop">
-      <span id="vidDropLabel">Tocá para subir un video</span>
+    <h2><span class="num">1</span> Clips (hasta 8)</h2>
+    <div id="vidClipsContainer"></div>
+    <label class="photo-drop" id="vidDrop" style="margin-top:6px;">
+      <span id="vidDropLabel">+ Agregar clip</span>
       <input type="file" id="vidFileInput" accept="video/*">
     </label>
-    <video id="vidPreview" controls style="width:100%; border-radius:12px; margin-top:10px; display:none;"></video>
-    <div class="hint">Por ahora es <b>1 solo video a la vez</b> (subir otro reemplaza este). Unir varios clips va a llegar en la próxima actualización. Hasta 3 minutos, formatos MP4 recomendados.</div>
+    <div class="hint">Arrastrá ⠿ para reordenar. Cada clip se puede recortar por separado. Hasta 3 minutos en total entre todos.</div>
   </div>
 
+  <video id="vidPreview" style="display:none;"></video>
+
   <div class="card" id="vidTrimCard" style="display:none;">
-    <h2><span class="num">2</span> Recortar</h2>
-    <div class="hint">Arrastrá las manijas rosadas para elegir dónde empieza y termina.</div>
+    <h2><span class="num">2</span> Recortar <span id="vidTrimClipName" style="opacity:0.7; font-weight:400; font-size:13px;"></span></h2>
+    <div class="hint">Arrastrá las manijas rosadas para elegir dónde empieza y termina este clip.</div>
     <div class="v-timeline" id="vidTimeline">
       <div class="v-timeline-region" id="vidTrimRegion">
         <div class="v-timeline-handle" id="vidHandleStart">◀</div>
@@ -658,13 +699,19 @@ TODO INCLUIDO</textarea>
     </div>
   </div>
 
+  <div class="card" id="vidTransitionCard" style="display:none;">
+    <h2><span class="num">3</span> Transición entre clips</h2>
+    <div class="chip-grid" id="vidTransitionGrid"></div>
+    <div class="hint">Se aplica entre cada par de clips consecutivos. "Corte seco" es instantáneo, sin efecto.</div>
+  </div>
+
   <div class="card">
-    <h2><span class="num">3</span> Filtro de color</h2>
+    <h2><span class="num">4</span> Filtro de color</h2>
     <div class="filter-grid" id="vidFilterGrid"></div>
   </div>
 
   <div class="card" id="vidPreviewCard" style="display:none;">
-    <h2><span class="num">4</span> Vista previa (arrastrá los textos)</h2>
+    <h2><span class="num">5</span> Vista previa (arrastrá los textos)</h2>
     <div class="v-stage-wrap">
       <div class="v-stage" id="vidStage">
         <canvas id="vidStageCanvas"></canvas>
@@ -675,7 +722,7 @@ TODO INCLUIDO</textarea>
   </div>
 
   <div class="card" id="vidTextsCard" style="display:none;">
-    <h2><span class="num">5</span> Textos (hasta 4)</h2>
+    <h2><span class="num">6</span> Textos (hasta 4)</h2>
     <div id="vidTextsContainer"></div>
     <button class="add-clip-btn" id="vidAddTextBtn" style="margin-top:10px;">+ Agregar texto</button>
   </div>
@@ -2100,22 +2147,37 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 </script>
 <script>
 // ============================================================
-// Caramelo Tours — Pestaña Video (Fase 1b: recorte, filtro,
-// vista previa en vivo, hasta 4 textos arrastrables con tiempo)
+// Caramelo Tours — Pestaña Video (Fase 2: múltiples clips,
+// reordenar, recortar cada uno, transiciones, + Fase 1b: textos)
 // ============================================================
 
 (function () {
   const VIDEO_ENGINE_BASE_URL = "https://systechsoft.github.io/caramelo-post/motor-video/";
+  const MAX_CLIPS = 8;
   const MAX_TEXTS = 4;
+  const MAX_TOTAL_SECONDS = 180; // 3 minutes
+  const TRANSITION_DURATION = 0.6;
 
   let ffmpeg = null;
   let ffmpegLoading = null;
 
-  let videoFile = null;
-  let videoDuration = 0;
-  let videoW = 0, videoH = 0;
-  let trimStart = 0;
-  let trimEnd = 0;
+  // clips: {id, file, name, duration, trimStart, trimEnd, videoW, videoH, thumb}
+  let clips = [];
+  let clipIdCounter = 0;
+  let selectedClipId = null;
+
+  const TRANSITIONS = {
+    fade:       "Fundido",
+    slideleft:  "Deslizar ←",
+    slideright: "Deslizar →",
+    slideup:    "Deslizar ↑",
+    slidedown:  "Deslizar ↓",
+    circleopen: "Círculo",
+    wipeleft:   "Cortina",
+    dissolve:   "Difuminado",
+    none:       "Corte seco",
+  };
+  let selectedTransition = "fade";
 
   const FILTERS = {
     none:    { label: "Ninguno",   vf: null },
@@ -2130,19 +2192,21 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   };
   let selectedFilter = "none";
 
-  // each text: {id, content, fontFamily, fontFile, start, end, xf, yf, scale}
+  // texts: {id, content, fontFamily, fontFile, start, end, xf, yf, scale}
   let texts = [];
   let textIdCounter = 0;
   const DEFAULT_POSITIONS = [
-    { xf: 0.5, yf: 0.75 },
-    { xf: 0.5, yf: 0.62 },
-    { xf: 0.5, yf: 0.85 },
-    { xf: 0.5, yf: 0.50 },
+    { xf: 0.5, yf: 0.75 }, { xf: 0.5, yf: 0.62 }, { xf: 0.5, yf: 0.85 }, { xf: 0.5, yf: 0.50 },
   ];
+
+  let totalDuration = 0;   // final joined timeline duration, used for text timing
+  let trimStart = 0, trimEnd = 0; // for the currently-selected clip's trim editor
+  let previewVideoW = 1080, previewVideoH = 1920;
 
   // ---------- DOM ----------
   const videoInput = document.getElementById('vidFileInput');
   const videoPreview = document.getElementById('vidPreview');
+  const clipsContainer = document.getElementById('vidClipsContainer');
   const vidTimeline = document.getElementById('vidTimeline');
   const trimRegion = document.getElementById('vidTrimRegion');
   const handleStart = document.getElementById('vidHandleStart');
@@ -2150,6 +2214,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   const timeLabelStart = document.getElementById('vidTimeLabelStart');
   const timeLabelEnd = document.getElementById('vidTimeLabelEnd');
   const trimDurLabel = document.getElementById('vidTrimDurLabel');
+  const trimCard = document.getElementById('vidTrimCard');
+  const trimClipName = document.getElementById('vidTrimClipName');
+  const transitionCard = document.getElementById('vidTransitionCard');
+  const transitionGrid = document.getElementById('vidTransitionGrid');
   const filterGrid = document.getElementById('vidFilterGrid');
   const generateBtn = document.getElementById('vidGenerateBtn');
   const loadingMsg = document.getElementById('vidLoadingMsg');
@@ -2174,7 +2242,17 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     return `${m}:${sec.toString().padStart(2, '0')}`;
   }
 
-  // ---------- filter grid (real rendered thumbnails, FILTER_THUMBS) ----------
+  function clipDuration(c) { return c.trimEnd - c.trimStart; }
+
+  function recomputeTotalDuration() {
+    if (clips.length === 0) { totalDuration = 0; return; }
+    const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
+    const nTransitions = Math.max(0, clips.length - 1);
+    const overlap = selectedTransition === 'none' ? 0 : TRANSITION_DURATION * nTransitions;
+    totalDuration = Math.max(0.1, sumTrimmed - overlap);
+  }
+
+  // ================= FILTER GRID =================
   function renderFilterGrid() {
     filterGrid.innerHTML = '';
     Object.entries(FILTERS).forEach(([key, f]) => {
@@ -2184,66 +2262,221 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         ? `<img class="thumb" src="data:image/png;base64,${FILTER_THUMBS[key]}" alt="${f.label}">`
         : `<div class="thumb f-${key}"></div>`;
       el.innerHTML = `${thumbSrc}<div class="fname">${f.label}</div>`;
-      el.addEventListener('click', () => {
-        selectedFilter = key;
-        renderFilterGrid();
-        drawStageFrame();
-      });
+      el.addEventListener('click', () => { selectedFilter = key; renderFilterGrid(); });
       filterGrid.appendChild(el);
     });
   }
   renderFilterGrid();
 
-  // ---------- video upload ----------
-  // register the seeked listener ONCE (not on every upload) to avoid stacking duplicates
-  videoPreview.addEventListener('seeked', drawStageFrame);
-  videoPreview.addEventListener('loadeddata', drawStageFrame);
+  // ================= TRANSITION CHIPS =================
+  function renderTransitionGrid() {
+    transitionGrid.innerHTML = '';
+    Object.entries(TRANSITIONS).forEach(([key, label]) => {
+      const el = document.createElement('div');
+      el.className = 'chip' + (key === selectedTransition ? ' active' : '');
+      el.textContent = label;
+      el.addEventListener('click', () => {
+        selectedTransition = key;
+        renderTransitionGrid();
+        recomputeTotalDuration();
+      });
+      transitionGrid.appendChild(el);
+    });
+  }
+  renderTransitionGrid();
 
-  videoInput.addEventListener('change', (e) => {
+  // ================= CLIP MANAGEMENT =================
+  function extractClipMetadata(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.muted = true;
+      v.src = url;
+      v.onloadedmetadata = () => {
+        v.currentTime = Math.min(0.1, (v.duration || 1) / 2);
+      };
+      v.onseeked = () => {
+        let thumb = null;
+        try {
+          const c = document.createElement('canvas');
+          c.width = 80; c.height = 80;
+          const ctx = c.getContext('2d');
+          const vw = v.videoWidth, vh = v.videoHeight;
+          const scale = Math.max(80 / vw, 80 / vh);
+          const nw = vw * scale, nh = vh * scale;
+          ctx.drawImage(v, (80 - nw) / 2, (80 - nh) / 2, nw, nh);
+          thumb = c.toDataURL('image/jpeg', 0.7);
+        } catch (err) { /* ignore, fallback to no thumb */ }
+        resolve({
+          duration: v.duration || 1,
+          videoW: v.videoWidth || 1080,
+          videoH: v.videoHeight || 1920,
+          thumb,
+        });
+        URL.revokeObjectURL(url);
+      };
+      // safety net in case metadata/seek events never fire on some browsers
+      setTimeout(() => resolve({ duration: 1, videoW: 1080, videoH: 1920, thumb: null }), 4000);
+    });
+  }
+
+  videoInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
+    videoInput.value = '';
     if (!file) return;
-    videoFile = file;
-    const url = URL.createObjectURL(file);
-    videoPreview.src = url;
-    videoPreview.style.display = 'block';
-    document.getElementById('vidDropLabel').textContent = "Video cargado ✓ (tocá para cambiar)";
-    videoPreview.onloadedmetadata = () => {
-      videoDuration = videoPreview.duration;
-      videoW = videoPreview.videoWidth || 1080;
-      videoH = videoPreview.videoHeight || 1920;
-      trimStart = 0;
-      trimEnd = videoDuration;
-      layoutTrimHandles();
-      document.getElementById('vidTrimCard').style.display = 'block';
-      previewCard.style.display = 'block';
-      textsCard.style.display = 'block';
-
-      // start with one default text so the flow feels immediate
-      if (texts.length === 0) addText();
-      renderTextsOverlay();
-
-      // Force-seek to trigger a 'seeked' event even if currentTime is already 0
-      // (setting the same value again wouldn't fire it), and also try drawing
-      // immediately in case the frame is already decoded.
-      if (trimStart === 0) {
-        videoPreview.currentTime = 0.001;
-        setTimeout(() => { videoPreview.currentTime = trimStart; }, 50);
-      } else {
-        videoPreview.currentTime = trimStart;
-      }
-      // extra safety net: try drawing a few times shortly after load in case
-      // events fire in an unexpected order on some browsers (notably iOS Safari)
-      setTimeout(drawStageFrame, 150);
-      setTimeout(drawStageFrame, 400);
-      setTimeout(drawStageFrame, 800);
+    if (clips.length >= MAX_CLIPS) {
+      alert(`Máximo ${MAX_CLIPS} clips.`);
+      return;
+    }
+    const meta = await extractClipMetadata(file);
+    const clip = {
+      id: clipIdCounter++,
+      file,
+      name: file.name,
+      duration: meta.duration,
+      trimStart: 0,
+      trimEnd: meta.duration,
+      videoW: meta.videoW,
+      videoH: meta.videoH,
+      thumb: meta.thumb,
     };
+    clips.push(clip);
+    recomputeTotalDuration();
+    renderClipsList();
+    if (clips.length === 1) selectClip(clip.id);
+
+    previewCard.style.display = 'block';
+    textsCard.style.display = 'block';
+    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
+    if (texts.length === 0) addText();
   });
 
-  // ---------- trim timeline (video track) ----------
+  function renderClipsList() {
+    clipsContainer.innerHTML = '';
+    clips.forEach((c, idx) => {
+      const item = document.createElement('div');
+      item.className = 'clip-item' + (c.id === selectedClipId ? ' selected' : '');
+      item.dataset.id = c.id;
+      const thumbHtml = c.thumb ? `<img src="${c.thumb}" alt="">` : '▶';
+      item.innerHTML = `
+        <span class="handle">⠿</span>
+        <div class="clip-thumb">${thumbHtml}</div>
+        <div class="clip-info">
+          <div class="name">${c.name}</div>
+          <div class="dur">${fmtTime(clipDuration(c))}</div>
+        </div>
+        <div class="clip-actions">
+          <button class="del" title="Quitar">✕</button>
+        </div>
+      `;
+      item.querySelector('.clip-info').addEventListener('click', () => selectClip(c.id));
+      item.querySelector('.del').addEventListener('click', () => removeClip(c.id));
+      attachClipReorder(item, c.id);
+      clipsContainer.appendChild(item);
+    });
+    const totalLabel = document.getElementById('vidDropLabel');
+    if (clips.length > 0) {
+      totalLabel.textContent = `+ Agregar clip (${clips.length}/${MAX_CLIPS})`;
+    }
+  }
+
+  function attachClipReorder(item, id) {
+    const handle = item.querySelector('.handle');
+    let dragging = false;
+    let startY = 0;
+
+    handle.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      startY = e.clientY;
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+      item.style.zIndex = 10;
+      e.stopPropagation();
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dy = e.clientY - startY;
+      item.style.transform = `translateY(${dy}px)`;
+      item.style.opacity = '0.85';
+
+      // figure out which sibling we're hovering over and reorder live
+      const siblings = [...clipsContainer.children];
+      const myIndex = siblings.indexOf(item);
+      const itemRect = item.getBoundingClientRect();
+      const midY = itemRect.top + itemRect.height / 2 + dy;
+
+      for (let i = 0; i < siblings.length; i++) {
+        if (siblings[i] === item) continue;
+        const r = siblings[i].getBoundingClientRect();
+        const sMid = r.top + r.height / 2;
+        if (i < myIndex && midY < sMid) {
+          const fromIdx = clips.findIndex(c => c.id === id);
+          const toIdx = i;
+          const [moved] = clips.splice(fromIdx, 1);
+          clips.splice(toIdx, 0, moved);
+          renderClipsList();
+          return;
+        }
+        if (i > myIndex && midY > sMid) {
+          const fromIdx = clips.findIndex(c => c.id === id);
+          const toIdx = i;
+          const [moved] = clips.splice(fromIdx, 1);
+          clips.splice(toIdx, 0, moved);
+          renderClipsList();
+          return;
+        }
+      }
+      e.stopPropagation();
+    });
+    function endDrag() {
+      dragging = false;
+      item.style.transform = '';
+      item.style.opacity = '';
+      item.style.zIndex = '';
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+
+  function selectClip(id) {
+    const c = clips.find(x => x.id === id);
+    if (!c) return;
+    selectedClipId = id;
+    trimStart = c.trimStart;
+    trimEnd = c.trimEnd;
+    previewVideoW = c.videoW;
+    previewVideoH = c.videoH;
+    trimClipName.textContent = '— ' + c.name;
+    const url = URL.createObjectURL(c.file);
+    videoPreview.src = url;
+    videoPreview.onloadedmetadata = () => {
+      layoutTrimHandles();
+      videoPreview.currentTime = 0.001;
+      setTimeout(() => { videoPreview.currentTime = trimStart; }, 50);
+      setTimeout(drawStageFrame, 150);
+      setTimeout(drawStageFrame, 400);
+    };
+    trimCard.style.display = 'block';
+    renderClipsList();
+  }
+
+  function removeClip(id) {
+    clips = clips.filter(c => c.id !== id);
+    if (selectedClipId === id) {
+      selectedClipId = null;
+      trimCard.style.display = 'none';
+    }
+    recomputeTotalDuration();
+    renderClipsList();
+    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
+    if (clips.length > 0 && !selectedClipId) selectClip(clips[0].id);
+  }
+
+  // ================= TRIM (for the selected clip) =================
   function layoutTrimHandles() {
-    if (!videoDuration) return;
-    const leftPct = (trimStart / videoDuration) * 100;
-    const rightPct = 100 - (trimEnd / videoDuration) * 100;
+    const dur = (clips.find(c => c.id === selectedClipId) || {}).duration || 1;
+    const leftPct = (trimStart / dur) * 100;
+    const rightPct = 100 - (trimEnd / dur) * 100;
     trimRegion.style.left = leftPct + '%';
     trimRegion.style.right = rightPct + '%';
     timeLabelStart.textContent = fmtTime(trimStart);
@@ -2259,18 +2492,24 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       e.stopPropagation();
     });
     handleEl.addEventListener('pointermove', (e) => {
-      if (!dragging || !videoDuration) return;
+      if (!dragging) return;
+      const c = clips.find(x => x.id === selectedClipId);
+      if (!c) return;
       const rect = vidTimeline.getBoundingClientRect();
       const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const t = frac * videoDuration;
+      const t = frac * c.duration;
       if (isStart) {
         trimStart = Math.max(0, Math.min(t, trimEnd - 0.3));
         videoPreview.currentTime = trimStart;
       } else {
-        trimEnd = Math.min(videoDuration, Math.max(t, trimStart + 0.3));
+        trimEnd = Math.min(c.duration, Math.max(t, trimStart + 0.3));
         videoPreview.currentTime = trimEnd;
       }
+      c.trimStart = trimStart;
+      c.trimEnd = trimEnd;
       layoutTrimHandles();
+      recomputeTotalDuration();
+      renderClipsList();
       e.stopPropagation();
     });
     handleEl.addEventListener('pointerup', () => { dragging = false; });
@@ -2279,24 +2518,22 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   attachTrimHandle(handleStart, true);
   attachTrimHandle(handleEnd, false);
 
-  // ---------- live preview stage (frame + draggable texts) ----------
+  videoPreview.addEventListener('seeked', drawStageFrame);
+  videoPreview.addEventListener('loadeddata', drawStageFrame);
+
+  // ================= LIVE PREVIEW STAGE (frame + draggable texts) =================
   function drawStageFrame() {
-    if (!videoW || !videoH) return;
-    if (videoPreview.readyState < 2) return; // not enough data decoded yet
-    stageCanvas.width = videoW;
-    stageCanvas.height = videoH;
+    if (!previewVideoW || !previewVideoH) return;
+    if (videoPreview.readyState < 2) return;
+    stageCanvas.width = previewVideoW;
+    stageCanvas.height = previewVideoH;
     const ctx = stageCanvas.getContext('2d');
-    try {
-      ctx.drawImage(videoPreview, 0, 0, videoW, videoH);
-    } catch (err) {
-      // some browsers can briefly throw if called at an awkward moment; the
-      // retry timers in the upload handler will simply try again shortly after
-    }
+    try { ctx.drawImage(videoPreview, 0, 0, previewVideoW, previewVideoH); } catch (err) {}
   }
 
   function renderTextsOverlay() {
     textsOverlay.innerHTML = '';
-    texts.forEach((t, idx) => {
+    texts.forEach((t) => {
       const el = document.createElement('div');
       el.className = 'v-stage-text';
       el.textContent = t.content;
@@ -2329,19 +2566,16 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     el.addEventListener('pointercancel', () => { dragging = false; });
   }
 
-  // ---------- texts list management ----------
+  // ================= TEXTS LIST =================
   function addText() {
     if (texts.length >= MAX_TEXTS) return;
     const pos = DEFAULT_POSITIONS[texts.length] || { xf: 0.5, yf: 0.7 };
     const t = {
       id: textIdCounter++,
       content: texts.length === 0 ? "¡Este finde a Morrocoy!" : "Nuevo texto",
-      fontFamily: 'Hackney',
-      fontFile: null,
-      start: 0,
-      end: Math.min(4, videoDuration || 4),
-      xf: pos.xf, yf: pos.yf,
-      scale: 1,
+      fontFamily: 'Hackney', fontFile: null,
+      start: 0, end: Math.min(4, totalDuration || 4),
+      xf: pos.xf, yf: pos.yf, scale: 1,
     };
     texts.push(t);
     renderTextsList();
@@ -2364,9 +2598,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     if (typeof FONT_MANIFEST !== 'undefined') {
       FONT_MANIFEST.forEach(f => {
         const opt = document.createElement('option');
-        opt.value = f.family;
-        opt.textContent = f.name;
-        opt.dataset.file = f.file;
+        opt.value = f.family; opt.textContent = f.name; opt.dataset.file = f.file;
         select.appendChild(opt);
       });
     }
@@ -2383,7 +2615,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       item.innerHTML = `
         <div class="v-text-head">
           <span class="v-text-title">Texto ${idx + 1}</span>
-          <div class="del" data-id="${t.id}">✕</div>
+          <div class="del">✕</div>
         </div>
         <textarea class="paste-box v-text-content" style="min-height:56px;">${t.content}</textarea>
         <label>Fuente</label>
@@ -2393,7 +2625,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           <span style="font-size:13px; opacity:0.8;">Tamaño</span>
           <div class="sizebtn v-text-plus">+</div>
         </div>
-        <label style="margin-top:10px;">¿Cuándo aparece y desaparece?</label>
+        <label style="margin-top:10px;">¿Cuándo aparece y desaparece? (sobre el video final ya unido)</label>
         <div class="v-mini-timeline">
           <div class="v-mini-region">
             <div class="v-mini-handle v-mini-start">◀</div>
@@ -2417,32 +2649,20 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
       populateFontSelectFor(fontEl, t.fontFamily);
 
-      contentEl.addEventListener('input', () => {
-        t.content = contentEl.value;
-        renderTextsOverlay();
-      });
+      contentEl.addEventListener('input', () => { t.content = contentEl.value; renderTextsOverlay(); });
       fontEl.addEventListener('change', () => {
         const opt = fontEl.selectedOptions[0];
-        t.fontFamily = opt.value;
-        t.fontFile = opt.dataset.file || null;
+        t.fontFamily = opt.value; t.fontFile = opt.dataset.file || null;
         renderTextsOverlay();
       });
-      minusEl.addEventListener('click', () => {
-        t.scale = Math.max(0.4, t.scale - 0.1);
-        renderTextsOverlay();
-      });
-      plusEl.addEventListener('click', () => {
-        t.scale = Math.min(3, t.scale + 0.1);
-        renderTextsOverlay();
-      });
+      minusEl.addEventListener('click', () => { t.scale = Math.max(0.4, t.scale - 0.1); renderTextsOverlay(); });
+      plusEl.addEventListener('click', () => { t.scale = Math.min(3, t.scale + 0.1); renderTextsOverlay(); });
       delEl.addEventListener('click', () => removeText(t.id));
 
       function layoutMini() {
-        const dur = videoDuration || 10;
-        const leftPct = (t.start / dur) * 100;
-        const rightPct = 100 - (t.end / dur) * 100;
-        miniRegion.style.left = leftPct + '%';
-        miniRegion.style.right = rightPct + '%';
+        const dur = totalDuration || 10;
+        miniRegion.style.left = (t.start / dur) * 100 + '%';
+        miniRegion.style.right = (100 - (t.end / dur) * 100) + '%';
         timeLabel.textContent = `${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s`;
       }
       layoutMini();
@@ -2456,7 +2676,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         });
         handleEl.addEventListener('pointermove', (e) => {
           if (!dragging) return;
-          const dur = videoDuration || 10;
+          const dur = totalDuration || 10;
           const rect = miniTimeline.getBoundingClientRect();
           const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
           const tt = frac * dur;
@@ -2473,7 +2693,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     });
   }
 
-  // ---------- ffmpeg engine loading (lazy, on first use) ----------
+  // ================= FFMPEG ENGINE =================
   function loadEngine() {
     if (ffmpegLoading) return ffmpegLoading;
     ffmpegLoading = (async () => {
@@ -2495,7 +2715,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     })();
     return ffmpegLoading;
   }
-
   let enginePreloadStarted = false;
   function preloadEngineOnce() {
     if (enginePreloadStarted) return;
@@ -2503,7 +2722,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     loadEngine().catch(err => console.error('engine preload failed', err));
   }
 
-  // ---------- font loading on-demand for text overlay ----------
   const loadedVideoFonts = new Set();
   async function ensureFontInFFmpegFS(family, file) {
     const virtualName = family + '.ttf';
@@ -2529,12 +2747,18 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       .replace(/\r\n/g, '\n');
   }
 
-  // ---------- generate / export ----------
+  // ================= GENERATE / EXPORT =================
   generateBtn.addEventListener('click', async () => {
-    if (!videoFile) {
-      alert('Subí un video primero.');
+    if (clips.length === 0) {
+      alert('Subí al menos un clip primero.');
       return;
     }
+    const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
+    if (sumTrimmed > MAX_TOTAL_SECONDS + 5) {
+      alert('El total supera los 3 minutos permitidos. Recortá algún clip.');
+      return;
+    }
+
     loadingMsg.style.display = 'block';
     progressFill.style.width = '0%';
     progressText.textContent = 'Preparando...';
@@ -2543,36 +2767,78 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     try {
       await loadEngine();
 
-      const inputBuf = new Uint8Array(await videoFile.arrayBuffer());
-      await ffmpeg.writeFile('in.mp4', inputBuf);
-
-      const filterDef = FILTERS[selectedFilter];
-      const activeTexts = texts.filter(t => t.content.trim());
-      const needsReencode = !!filterDef.vf || activeTexts.length > 0;
-
-      const args = ['-ss', String(trimStart), '-i', 'in.mp4', '-t', String(trimEnd - trimStart)];
-
-      if (!needsReencode) {
-        args.push('-c', 'copy');
-      } else {
-        const vfParts = [];
-        if (filterDef.vf) vfParts.push(filterDef.vf);
-
-        const baseFontSize = Math.round((videoH || 1920) * 0.045);
-        for (const t of activeTexts) {
-          const fontVirtualName = await ensureFontInFFmpegFS(t.fontFamily, t.fontFile);
-          const safeText = escapeDrawtext(t.content.trim());
-          const size = Math.round(baseFontSize * t.scale);
-          const relStart = Math.max(0, t.start - trimStart);
-          const relEnd = Math.max(relStart + 0.1, t.end - trimStart);
-          vfParts.push(
-            `drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${relStart},${relEnd})'`
-          );
-        }
-        if (vfParts.length) args.push('-vf', vfParts.join(','));
-        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
+      // write each trimmed clip as its own input (input-level -ss/-t trimming
+      // is fast and doesn't need re-encoding just to prepare the pieces)
+      const args = [];
+      for (let i = 0; i < clips.length; i++) {
+        const c = clips[i];
+        const buf = new Uint8Array(await c.file.arrayBuffer());
+        await ffmpeg.writeFile(`clip${i}.mp4`, buf);
+        args.push('-ss', String(c.trimStart), '-t', String(clipDuration(c)), '-i', `clip${i}.mp4`);
       }
 
+      let filterComplex = '';
+      let vOut, aOut;
+
+      if (clips.length === 1) {
+        vOut = '0:v'; aOut = '0:a';
+      } else if (selectedTransition === 'none') {
+        // simple concat, no crossfade blending
+        const inputsRefs = clips.map((_, i) => `[${i}:v][${i}:a]`).join('');
+        filterComplex += `${inputsRefs}concat=n=${clips.length}:v=1:a=1[vcat][acat];`;
+        vOut = 'vcat'; aOut = 'acat';
+      } else {
+        // chained xfade (video) + acrossfade (audio) across all clips
+        let cum = clipDuration(clips[0]);
+        let vLabel = '0:v';
+        let aLabel = '0:a';
+        for (let i = 1; i < clips.length; i++) {
+          const d = clipDuration(clips[i]);
+          const offset = Math.max(0, cum - TRANSITION_DURATION);
+          const vOutLabel = `v${i}`;
+          const aOutLabel = `a${i}`;
+          filterComplex += `[${vLabel}][${i}:v]xfade=transition=${selectedTransition}:duration=${TRANSITION_DURATION}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
+          filterComplex += `[${aLabel}][${i}:a]acrossfade=d=${TRANSITION_DURATION}[${aOutLabel}];`;
+          vLabel = vOutLabel; aLabel = aOutLabel;
+          cum = cum + d - TRANSITION_DURATION;
+        }
+        vOut = vLabel; aOut = aLabel;
+      }
+
+      // color filter, applied to the joined video stream
+      const filterDef = FILTERS[selectedFilter];
+      let finalVLabel = vOut;
+      if (filterDef.vf) {
+        filterComplex += `[${vOut}]${filterDef.vf}[vfilt];`;
+        finalVLabel = 'vfilt';
+      }
+
+      // texts, applied in sequence on top of the (already joined+filtered) video
+      const activeTexts = texts.filter(t => t.content.trim());
+      const baseFontSize = Math.round((clips[0].videoH || 1920) * 0.045);
+      let prevLabel = finalVLabel;
+      for (let i = 0; i < activeTexts.length; i++) {
+        const t = activeTexts[i];
+        const fontVirtualName = await ensureFontInFFmpegFS(t.fontFamily, t.fontFile);
+        const safeText = escapeDrawtext(t.content.trim());
+        const size = Math.round(baseFontSize * t.scale);
+        const outLabel = `txt${i}`;
+        filterComplex += `[${prevLabel}]drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${t.start},${t.end})'[${outLabel}];`;
+        prevLabel = outLabel;
+      }
+
+      // strip trailing semicolon, map final outputs
+      if (filterComplex.endsWith(';')) filterComplex = filterComplex.slice(0, -1);
+
+      if (filterComplex) {
+        args.push('-filter_complex', filterComplex);
+        args.push('-map', `[${prevLabel}]`);
+        args.push('-map', `[${aOut}]`);
+      } else {
+        args.push('-map', '0:v', '-map', '0:a');
+      }
+
+      args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
       args.push('out.mp4');
 
       progressText.textContent = 'Procesando...';
@@ -2603,9 +2869,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     const filename = 'caramelo_video.mp4';
     const file = new File([blob], filename, { type: 'video/mp4' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: filename }).catch(() => {
-        anchorDownloadBlob(blob, filename);
-      });
+      navigator.share({ files: [file], title: filename }).catch(() => anchorDownloadBlob(blob, filename));
     } else {
       anchorDownloadBlob(blob, filename);
     }
