@@ -639,7 +639,7 @@ TODO INCLUIDO</textarea>
       <input type="file" id="vidFileInput" accept="video/*">
     </label>
     <video id="vidPreview" controls style="width:100%; border-radius:12px; margin-top:10px; display:none;"></video>
-    <div class="hint">Hasta 3 minutos por ahora. Formatos MP4 recomendados.</div>
+    <div class="hint">Por ahora es <b>1 solo video a la vez</b> (subir otro reemplaza este). Unir varios clips va a llegar en la próxima actualización. Hasta 3 minutos, formatos MP4 recomendados.</div>
   </div>
 
   <div class="card" id="vidTrimCard" style="display:none;">
@@ -2195,6 +2195,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   renderFilterGrid();
 
   // ---------- video upload ----------
+  // register the seeked listener ONCE (not on every upload) to avoid stacking duplicates
+  videoPreview.addEventListener('seeked', drawStageFrame);
+  videoPreview.addEventListener('loadeddata', drawStageFrame);
+
   videoInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -2216,10 +2220,23 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
       // start with one default text so the flow feels immediate
       if (texts.length === 0) addText();
+      renderTextsOverlay();
 
-      videoPreview.currentTime = trimStart;
+      // Force-seek to trigger a 'seeked' event even if currentTime is already 0
+      // (setting the same value again wouldn't fire it), and also try drawing
+      // immediately in case the frame is already decoded.
+      if (trimStart === 0) {
+        videoPreview.currentTime = 0.001;
+        setTimeout(() => { videoPreview.currentTime = trimStart; }, 50);
+      } else {
+        videoPreview.currentTime = trimStart;
+      }
+      // extra safety net: try drawing a few times shortly after load in case
+      // events fire in an unexpected order on some browsers (notably iOS Safari)
+      setTimeout(drawStageFrame, 150);
+      setTimeout(drawStageFrame, 400);
+      setTimeout(drawStageFrame, 800);
     };
-    videoPreview.addEventListener('seeked', drawStageFrame);
   });
 
   // ---------- trim timeline (video track) ----------
@@ -2265,13 +2282,15 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   // ---------- live preview stage (frame + draggable texts) ----------
   function drawStageFrame() {
     if (!videoW || !videoH) return;
+    if (videoPreview.readyState < 2) return; // not enough data decoded yet
     stageCanvas.width = videoW;
     stageCanvas.height = videoH;
     const ctx = stageCanvas.getContext('2d');
-    ctx.drawImage(videoPreview, 0, 0, videoW, videoH);
-    const filterDef = FILTERS[selectedFilter];
-    if (filterDef.css) {
-      // no-op: real filter approximation not critical for preview; ffmpeg output is authoritative
+    try {
+      ctx.drawImage(videoPreview, 0, 0, videoW, videoH);
+    } catch (err) {
+      // some browsers can briefly throw if called at an awkward moment; the
+      // retry timers in the upload handler will simply try again shortly after
     }
   }
 
