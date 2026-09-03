@@ -268,6 +268,22 @@
   .switch .slider:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s; }
   .switch input:checked + .slider { background:#ff2e9a; }
   .switch input:checked + .slider:before { transform: translateX(20px); }
+
+  /* ---- Video tab: filter grid ---- */
+  .filter-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:10px; }
+  .filter-swatch { text-align:center; cursor:pointer; }
+  .filter-swatch .thumb { width:100%; aspect-ratio:1; border-radius:10px; margin-bottom:5px; border:2px solid transparent; }
+  .filter-swatch.active .thumb { border-color:#ff2e9a; }
+  .filter-swatch .fname { font-size:10.5px; opacity:0.75; color:var(--text-main); }
+  .thumb.f-none { background: repeating-conic-gradient(#5a6472 0% 25%, #46505c 0% 50%) 50% / 14px 14px; }
+  .thumb.f-warm { background: linear-gradient(135deg,#ffb347,#ff5e62); }
+  .thumb.f-cold { background: linear-gradient(135deg,#4facfe,#00f2fe); }
+  .thumb.f-bw { background: linear-gradient(135deg,#3a3a3a,#dedede); }
+  .thumb.f-bwhi { background: linear-gradient(135deg,#000,#fff); }
+  .thumb.f-vintage { background: linear-gradient(135deg,#d8c9a3,#a68a64); }
+  .thumb.f-cine { background: linear-gradient(135deg,#134e5e,#ff7e5f); }
+  .thumb.f-vibrant { background: linear-gradient(135deg,#ff0080,#7928ca,#2afadf); }
+  .thumb.f-pastel { background: linear-gradient(135deg,#f6d5f7,#fbe9d7); }
 </style>
 </head>
 <body>
@@ -282,7 +298,8 @@
 
 <div class="tabbar">
   <button class="tabbtn active" id="tabBtnCronograma">📅 Cronograma</button>
-  <button class="tabbtn" id="tabBtnAnuncios">✨ Anuncios Especiales</button>
+  <button class="tabbtn" id="tabBtnAnuncios">✨ Anuncios</button>
+  <button class="tabbtn" id="tabBtnVideo">🎬 Video</button>
 </div>
 
 <!-- ============ TAB 1: CRONOGRAMA ============ -->
@@ -538,6 +555,69 @@ TODO INCLUIDO</textarea>
     <br>
     <button class="download-btn" id="anDownloadBtn">Descargar imagen</button>
     <div class="hint" id="anSaveHint" style="margin-top:10px;"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ TAB 3: VIDEO ============ -->
+<div class="tabpanel" id="tabVideo">
+<div class="wrap">
+
+  <div class="card" id="vidEngineStatus" style="display:none;"></div>
+
+  <div class="card">
+    <h2><span class="num">1</span> Subir video</h2>
+    <label class="photo-drop" id="vidDrop">
+      <span id="vidDropLabel">Tocá para subir un video</span>
+      <input type="file" id="vidFileInput" accept="video/*">
+    </label>
+    <video id="vidPreview" controls style="width:100%; border-radius:12px; margin-top:10px; display:none;"></video>
+    <div class="hint">Hasta 3 minutos por ahora. Formatos MP4 recomendados.</div>
+  </div>
+
+  <div class="card" id="vidTrimCard" style="display:none;">
+    <h2><span class="num">2</span> Recortar</h2>
+    <label>Inicio</label>
+    <input type="range" id="vidTrimStart" min="0" max="10" step="0.1" value="0">
+    <label>Final</label>
+    <input type="range" id="vidTrimEnd" min="0" max="10" step="0.1" value="10">
+    <div class="hint" id="vidTrimLabel" style="text-align:center; font-weight:700;">0:00 → 0:10</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">3</span> Filtro de color</h2>
+    <div class="filter-grid" id="vidFilterGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="toggle-row">
+      <h2 style="margin:0;"><span class="num">4</span> Texto</h2>
+      <label class="switch"><input type="checkbox" id="vidTextToggle" checked><span class="slider"></span></label>
+    </div>
+    <input type="text" id="vidTextInput" value="¡Este finde a Morrocoy!" style="margin-top:10px;">
+    <label>Fuente</label>
+    <select id="vidTextFont"></select>
+    <label>¿Cuándo aparece?</label>
+    <input type="range" id="vidTextStart" min="0" max="10" step="0.1" value="0">
+    <label>¿Cuándo desaparece?</label>
+    <input type="range" id="vidTextEnd" min="0" max="10" step="0.1" value="4">
+    <div class="hint" id="vidTextTimeLabel" style="text-align:center; font-weight:700;">0.0s → 4.0s</div>
+  </div>
+
+  <button class="generate-btn" id="vidGenerateBtn">GENERAR VIDEO</button>
+  <div class="loading" id="vidLoadingMsg">Procesando el video, esto puede tardar unos minutos — no cierres la app...</div>
+  <div class="progress-mock" style="margin-top:10px; height:10px; border-radius:6px; background: var(--input-bg); overflow:hidden; border:1px solid var(--input-border);">
+    <div id="vidProgressFill" style="width:0%; height:100%; background:linear-gradient(90deg,#ff2e9a,#ff8c28); transition: width 0.2s;"></div>
+  </div>
+  <div class="hint" id="vidProgressText" style="text-align:center;"></div>
+
+  <div class="card preview-wrap" id="vidResultCard" style="display:none;">
+    <h2 style="justify-content:center;"><span class="num">✓</span> Resultado</h2>
+    <video id="vidResultVideo" controls style="width:100%; max-width:460px; border-radius:14px;"></video>
+    <br>
+    <button class="download-btn" id="vidDownloadBtn">Descargar / Compartir</button>
+    <div class="hint" style="margin-top:10px;">Se abre el selector para guardar/compartir el video. Si no aparece nada, mantené presionado el video de arriba.</div>
   </div>
 
 </div>
@@ -1908,16 +1988,26 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   // ---------- tab switching ----------
   const tabBtnCronograma = document.getElementById('tabBtnCronograma');
   const tabBtnAnuncios = document.getElementById('tabBtnAnuncios');
+  const tabBtnVideo = document.getElementById('tabBtnVideo');
   const tabCronograma = document.getElementById('tabCronograma');
   const tabAnuncios = document.getElementById('tabAnuncios');
-  tabBtnCronograma.addEventListener('click', () => {
-    tabBtnCronograma.classList.add('active'); tabBtnAnuncios.classList.remove('active');
-    tabCronograma.classList.add('active'); tabAnuncios.classList.remove('active');
-  });
+  const tabVideo = document.getElementById('tabVideo');
+
+  function activateTab(btn, panel) {
+    [tabBtnCronograma, tabBtnAnuncios, tabBtnVideo].forEach(b => b.classList.remove('active'));
+    [tabCronograma, tabAnuncios, tabVideo].forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    panel.classList.add('active');
+  }
+
+  tabBtnCronograma.addEventListener('click', () => activateTab(tabBtnCronograma, tabCronograma));
   tabBtnAnuncios.addEventListener('click', () => {
-    tabBtnAnuncios.classList.add('active'); tabBtnCronograma.classList.remove('active');
-    tabAnuncios.classList.add('active'); tabCronograma.classList.remove('active');
+    activateTab(tabBtnAnuncios, tabAnuncios);
     setTimeout(() => { layoutAll(); }, 50);
+  });
+  tabBtnVideo.addEventListener('click', () => {
+    activateTab(tabBtnVideo, tabVideo);
+    if (window.__preloadVideoEngine) window.__preloadVideoEngine();
   });
 
   // initial layout once fonts/images ready
@@ -1925,6 +2015,334 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     layoutAll();
     scheduleAnRender(200);
   });
+})();
+
+</script>
+<script src="motor-video/ffmpeg.js"></script>
+<script>
+// ============================================================
+// Caramelo Tours — Pestaña Video (Fase 1: 1 clip, recorte, filtro, texto)
+// ============================================================
+
+(function () {
+  const VIDEO_ENGINE_BASE_URL = "https://systechsoft.github.io/caramelo-post/motor-video/";
+
+  let ffmpeg = null;
+  let ffmpegLoaded = false;
+  let ffmpegLoading = null;
+
+  let videoFile = null;      // raw File from <input>
+  let videoDuration = 0;     // seconds
+  let trimStart = 0;
+  let trimEnd = 0;
+
+  const FILTERS = {
+    none:    { label: "Ninguno",   vf: null },
+    warm:    { label: "Cálido",    vf: "eq=gamma_r=1.06:gamma_b=0.94:saturation=1.12" },
+    cold:    { label: "Frío",      vf: "eq=gamma_b=1.08:gamma_r=0.94:saturation=1.05" },
+    bw:      { label: "B&N",       vf: "hue=s=0" },
+    bwhi:    { label: "B&N alto",  vf: "hue=s=0,eq=contrast=1.4" },
+    vintage: { label: "Vintage",   vf: "eq=saturation=0.6:contrast=0.92:gamma_r=1.05:gamma_b=0.92" },
+    cine:    { label: "Cine",      vf: "eq=gamma_r=1.05:gamma_b=0.95:contrast=1.1:saturation=1.08" },
+    vibrant: { label: "Vibrante",  vf: "eq=saturation=1.55:contrast=1.08" },
+    pastel:  { label: "Pastel",    vf: "eq=saturation=0.65:brightness=0.08:contrast=0.9" },
+  };
+
+  let selectedFilter = "none";
+  let textEnabled = true;
+  let textContent = "¡Este finde a Morrocoy!";
+  let textFontFamily = "Hackney";
+  let textFontFile = null; // manifest file for on-demand fonts (null = Hackney, embedded already)
+  let textStart = 0;
+  let textEnd = 0;
+
+  // ---------- DOM ----------
+  const videoInput = document.getElementById('vidFileInput');
+  const videoPreview = document.getElementById('vidPreview');
+  const trimStartRange = document.getElementById('vidTrimStart');
+  const trimEndRange = document.getElementById('vidTrimEnd');
+  const trimLabel = document.getElementById('vidTrimLabel');
+  const filterGrid = document.getElementById('vidFilterGrid');
+  const textToggle = document.getElementById('vidTextToggle');
+  const textInput = document.getElementById('vidTextInput');
+  const textFontSelect = document.getElementById('vidTextFont');
+  const textStartRange = document.getElementById('vidTextStart');
+  const textEndRange = document.getElementById('vidTextEnd');
+  const textTimeLabel = document.getElementById('vidTextTimeLabel');
+  const generateBtn = document.getElementById('vidGenerateBtn');
+  const loadingMsg = document.getElementById('vidLoadingMsg');
+  const progressFill = document.getElementById('vidProgressFill');
+  const progressText = document.getElementById('vidProgressText');
+  const resultVideo = document.getElementById('vidResultVideo');
+  const resultCard = document.getElementById('vidResultCard');
+  const downloadBtn = document.getElementById('vidDownloadBtn');
+  const engineStatus = document.getElementById('vidEngineStatus');
+
+  // ---------- font select population (reuse the 100-font manifest from Anuncios) ----------
+  function populateFontSelect() {
+    textFontSelect.innerHTML = '';
+    const pinned = document.createElement('option');
+    pinned.value = 'Hackney';
+    pinned.textContent = 'Hackney (por defecto)';
+    textFontSelect.appendChild(pinned);
+    if (typeof FONT_MANIFEST !== 'undefined') {
+      FONT_MANIFEST.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.family;
+        opt.textContent = f.name;
+        opt.dataset.file = f.file;
+        textFontSelect.appendChild(opt);
+      });
+    }
+  }
+  populateFontSelect();
+  textFontSelect.addEventListener('change', () => {
+    const opt = textFontSelect.selectedOptions[0];
+    textFontFamily = opt.value;
+    textFontFile = opt.dataset.file || null;
+  });
+
+  // ---------- filter grid ----------
+  function renderFilterGrid() {
+    filterGrid.innerHTML = '';
+    Object.entries(FILTERS).forEach(([key, f]) => {
+      const el = document.createElement('div');
+      el.className = 'filter-swatch' + (key === selectedFilter ? ' active' : '');
+      el.innerHTML = `<div class="thumb f-${key}"></div><div class="fname">${f.label}</div>`;
+      el.addEventListener('click', () => {
+        selectedFilter = key;
+        renderFilterGrid();
+      });
+      filterGrid.appendChild(el);
+    });
+  }
+  renderFilterGrid();
+
+  // ---------- video upload + trim range wiring ----------
+  videoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    videoFile = file;
+    const url = URL.createObjectURL(file);
+    videoPreview.src = url;
+    videoPreview.style.display = 'block';
+    document.getElementById('vidDropLabel').textContent = "Video cargado ✓ (tocá para cambiar)";
+    videoPreview.onloadedmetadata = () => {
+      videoDuration = videoPreview.duration;
+      trimStart = 0;
+      trimEnd = videoDuration;
+      trimStartRange.max = videoDuration;
+      trimEndRange.max = videoDuration;
+      trimStartRange.value = 0;
+      trimEndRange.value = videoDuration;
+      textStartRange.max = videoDuration;
+      textEndRange.max = videoDuration;
+      textStart = 0;
+      textEnd = Math.min(4, videoDuration);
+      textStartRange.value = textStart;
+      textEndRange.value = textEnd;
+      updateTrimLabel();
+      updateTextTimeLabel();
+      document.getElementById('vidTrimCard').style.display = 'block';
+    };
+  });
+
+  function fmtTime(s) {
+    s = Math.max(0, s);
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function updateTrimLabel() {
+    trimLabel.textContent = `${fmtTime(trimStart)} → ${fmtTime(trimEnd)} (dura ${fmtTime(trimEnd - trimStart)})`;
+  }
+  function updateTextTimeLabel() {
+    textTimeLabel.textContent = `${textStart.toFixed(1)}s → ${textEnd.toFixed(1)}s`;
+  }
+
+  trimStartRange.addEventListener('input', () => {
+    trimStart = Math.max(0, Math.min(parseFloat(trimStartRange.value), trimEnd - 0.2));
+    trimStartRange.value = trimStart;
+    videoPreview.currentTime = trimStart;
+    updateTrimLabel();
+  });
+  trimEndRange.addEventListener('input', () => {
+    trimEnd = Math.min(videoDuration || Infinity, Math.max(parseFloat(trimEndRange.value), trimStart + 0.2));
+    trimEndRange.value = trimEnd;
+    videoPreview.currentTime = trimEnd;
+    updateTrimLabel();
+  });
+
+  textStartRange.addEventListener('input', () => {
+    textStart = Math.max(0, Math.min(parseFloat(textStartRange.value), textEnd - 0.2));
+    textStartRange.value = textStart;
+    updateTextTimeLabel();
+  });
+  textEndRange.addEventListener('input', () => {
+    textEnd = Math.min(videoDuration || Infinity, Math.max(parseFloat(textEndRange.value), textStart + 0.2));
+    textEndRange.value = textEnd;
+    updateTextTimeLabel();
+  });
+
+  textToggle.addEventListener('change', () => { textEnabled = textToggle.checked; });
+  textInput.addEventListener('input', () => { textContent = textInput.value; });
+
+  // ---------- ffmpeg engine loading (lazy, on first use) ----------
+  function loadEngine() {
+    if (ffmpegLoading) return ffmpegLoading;
+    ffmpegLoading = (async () => {
+      engineStatus.textContent = "Descargando motor de video (una vez sola, ~31MB)...";
+      engineStatus.style.display = 'block';
+      const { FFmpeg } = FFmpegWASM;
+      ffmpeg = new FFmpeg();
+      ffmpeg.on('progress', ({ progress }) => {
+        const pct = Math.min(100, Math.round(progress * 100));
+        progressFill.style.width = pct + '%';
+        progressText.textContent = `Procesando... ${pct}%`;
+      });
+      await ffmpeg.load({
+        coreURL: VIDEO_ENGINE_BASE_URL + 'ffmpeg-core.js',
+        wasmURL: VIDEO_ENGINE_BASE_URL + 'ffmpeg-core.wasm',
+      });
+      ffmpegLoaded = true;
+      engineStatus.textContent = "Motor de video listo ✓";
+      setTimeout(() => { engineStatus.style.display = 'none'; }, 2000);
+    })();
+    return ffmpegLoading;
+  }
+
+  // preload the engine in the background once the Video tab is opened,
+  // so it's likely ready by the time the user hits Generate
+  let enginePreloadStarted = false;
+  function preloadEngineOnce() {
+    if (enginePreloadStarted) return;
+    enginePreloadStarted = true;
+    loadEngine().catch(err => {
+      console.error('engine preload failed', err);
+    });
+  }
+
+  // ---------- font loading on-demand for text overlay (reuse Anuncios pattern) ----------
+  const loadedVideoFonts = new Set();
+  async function ensureFontInFFmpegFS(family, file) {
+    const virtualName = family + '.ttf';
+    if (loadedVideoFonts.has(virtualName)) return virtualName;
+    let bytes;
+    if (family === 'Hackney' || !file) {
+      // Hackney is already embedded as a @font-face in the app; we still need
+      // the raw bytes for ffmpeg's drawtext, so fetch it from the same folder
+      // as the other on-demand fonts once, hosted alongside them.
+      const resp = await fetch(VIDEO_ENGINE_BASE_URL + 'Hackney.ttf');
+      bytes = new Uint8Array(await resp.arrayBuffer());
+    } else {
+      const resp = await fetch(FONT_BASE_URL + encodeURIComponent(file));
+      bytes = new Uint8Array(await resp.arrayBuffer());
+    }
+    await ffmpeg.writeFile(virtualName, bytes);
+    loadedVideoFonts.add(virtualName);
+    return virtualName;
+  }
+
+  function escapeDrawtext(text) {
+    return text
+      .replace(/\\/g, '\\\\\\\\')
+      .replace(/:/g, '\\:')
+      .replace(/'/g, "\u2019");
+  }
+
+  // ---------- generate / export ----------
+  generateBtn.addEventListener('click', async () => {
+    if (!videoFile) {
+      alert('Subí un video primero.');
+      return;
+    }
+    loadingMsg.style.display = 'block';
+    progressFill.style.width = '0%';
+    progressText.textContent = 'Preparando...';
+    generateBtn.disabled = true;
+
+    try {
+      await loadEngine();
+
+      const inputBuf = new Uint8Array(await videoFile.arrayBuffer());
+      await ffmpeg.writeFile('in.mp4', inputBuf);
+
+      const filterDef = FILTERS[selectedFilter];
+      const needsReencode = !!filterDef.vf || textEnabled;
+
+      const args = ['-ss', String(trimStart), '-i', 'in.mp4', '-t', String(trimEnd - trimStart)];
+
+      if (!needsReencode) {
+        // pure lossless trim
+        args.push('-c', 'copy');
+      } else {
+        const vfParts = [];
+        if (filterDef.vf) vfParts.push(filterDef.vf);
+        if (textEnabled && textContent.trim()) {
+          const fontVirtualName = await ensureFontInFFmpegFS(textFontFamily, textFontFile);
+          const safeText = escapeDrawtext(textContent.trim());
+          vfParts.push(
+            `drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=64:borderw=4:bordercolor=black:x=(w-text_w)/2:y=h*0.75:enable='between(t,${textStart - trimStart},${textEnd - trimStart})'`
+          );
+        }
+        if (vfParts.length) {
+          args.push('-vf', vfParts.join(','));
+        }
+        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
+      }
+
+      args.push('out.mp4');
+
+      progressText.textContent = 'Procesando...';
+      await ffmpeg.exec(args);
+
+      const result = await ffmpeg.readFile('out.mp4');
+      const blob = new Blob([result.buffer], { type: 'video/mp4' });
+      const url = URL.createObjectURL(blob);
+      resultVideo.src = url;
+      resultCard.style.display = 'block';
+      window.__lastVideoBlob = blob;
+
+      progressFill.style.width = '100%';
+      progressText.textContent = '¡Listo!';
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error(err);
+      showFatalError('al procesar el video: ' + err.message);
+    } finally {
+      loadingMsg.style.display = 'none';
+      generateBtn.disabled = false;
+    }
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const blob = window.__lastVideoBlob;
+    if (!blob) return;
+    const filename = 'caramelo_video.mp4';
+    const file = new File([blob], filename, { type: 'video/mp4' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: filename }).catch(() => {
+        anchorDownloadBlob(blob, filename);
+      });
+    } else {
+      anchorDownloadBlob(blob, filename);
+    }
+  });
+
+  function anchorDownloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+  }
+
+  // expose preload trigger for the tab-switch handler in the main app shell
+  window.__preloadVideoEngine = preloadEngineOnce;
 })();
 
 </script>
