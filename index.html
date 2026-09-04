@@ -304,8 +304,8 @@
     display:flex; align-items:center; justify-content:center; color:white; font-size:13px;
     cursor:ew-resize; touch-action:none;
   }
-  #vidHandleStart { left:-13px; }
-  #vidHandleEnd { right:-13px; }
+  #vidHandleStart, #vidEditHandleStart { left:-13px; }
+  #vidHandleEnd, #vidEditHandleEnd { right:-13px; }
   .time-labels { display:flex; justify-content:space-between; font-size:12px; opacity:0.75; margin-top:6px; color:var(--text-main); }
 
   /* ---- Video tab: live preview stage with draggable texts ---- */
@@ -401,7 +401,7 @@
 
   /* ---- Video tab: master multi-track timeline ---- */
   .v-master-timeline {
-    position:relative; margin-top:14px; padding-top:14px;
+    position:relative; margin-top:14px; padding-top:14px; touch-action:none;
   }
   .v-master-playhead {
     position:absolute; top:0; bottom:0; left:0; width:2px; background:#ffffff;
@@ -411,11 +411,11 @@
     content:""; position:absolute; top:-6px; left:-6px; width:14px; height:14px;
     background:#ffffff; border-radius:50%;
   }
-  .v-track-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .v-track-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; touch-action:none; }
   .v-track-label { width:22px; text-align:center; font-size:15px; flex-shrink:0; }
   .v-track {
     position:relative; flex:1; height:40px; border-radius:8px;
-    background: var(--input-bg); border:1px solid var(--input-border); overflow:hidden;
+    background: var(--input-bg); border:1px solid var(--input-border); overflow:hidden; touch-action:none;
   }
   .v-track-disabled {
     display:flex; align-items:center; justify-content:center;
@@ -822,8 +822,29 @@ TODO INCLUIDO</textarea>
     <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00</span></div>
   </div>
 
+  <div class="card" id="vidClipEditCard" style="display:none;">
+    <h2><span class="num">6</span> Clip seleccionado <span id="vidClipEditName" style="opacity:0.7; font-weight:400; font-size:13px;"></span></h2>
+    <div class="hint">Arrastrá las manijas rosadas para recortar el inicio y el final de este clip.</div>
+    <div class="v-timeline" id="vidEditTimeline">
+      <div class="v-timeline-region" id="vidEditRegion">
+        <div class="v-timeline-handle" id="vidEditHandleStart">◀</div>
+        <div class="v-timeline-handle" id="vidEditHandleEnd">▶</div>
+      </div>
+    </div>
+    <div class="time-labels">
+      <span id="vidEditLabelStart">0:00</span>
+      <span id="vidEditDurLabel" style="font-weight:700;">0:00</span>
+      <span id="vidEditLabelEnd">0:00</span>
+    </div>
+    <div class="anuncios-toolbar" style="margin-top:12px;">
+      <button type="button" id="vidClipMoveLeft">◀ Mover antes</button>
+      <button type="button" id="vidClipMoveRight">Mover después ▶</button>
+      <button type="button" id="vidClipDelete" style="color:#ff5a5a; border-color:rgba(255,90,90,0.4);">✕ Quitar</button>
+    </div>
+  </div>
+
   <div class="card" id="vidTextsCard" style="display:none;">
-    <h2><span class="num">6</span> Textos (hasta 4)</h2>
+    <h2><span class="num">7</span> Textos (hasta 4)</h2>
     <div id="vidTextsContainer"></div>
     <button class="add-clip-btn" id="vidAddTextBtn" style="margin-top:10px;">+ Agregar texto</button>
   </div>
@@ -2503,7 +2524,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     };
     clips.push(clip);
     recomputeLayout();
-    if (!selectedClipId) selectedClipId = clip.id;
+    selectClip(clip.id);
 
     masterCard.style.display = 'block';
     textsCard.style.display = 'block';
@@ -2536,14 +2557,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       } else {
         block.textContent = (i + 1);
       }
-      block.innerHTML += `<div class="v-clip-edge left"></div><div class="v-clip-edge right"></div>`;
-      block.addEventListener('pointerdown', (e) => {
-        if (e.target.classList.contains('v-clip-edge')) return;
-        selectedClipId = clip.id;
-        renderMasterTimeline();
-      });
-      attachClipEdgeDrag(block.querySelector('.left'), clip, true);
-      attachClipEdgeDrag(block.querySelector('.right'), clip, false);
+      // simple tap to select — no drag on this tiny strip (too small to grab
+      // reliably on a phone); recorte real happens in the dedicated editor below
+      block.addEventListener('click', () => selectClip(clip.id));
       trackVideo.appendChild(block);
 
       if (i > 0 && selectedTransition !== 'none') {
@@ -2569,31 +2585,91 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     layoutPlayhead();
   }
 
-  function attachClipEdgeDrag(edgeEl, clip, isLeft) {
-    let dragging = false;
-    edgeEl.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      try { edgeEl.setPointerCapture(e.pointerId); } catch (err) {}
-      e.stopPropagation();
-    });
-    edgeEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const rect = trackVideo.getBoundingClientRect();
-      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const layout = computeClipLayout();
-      const entry = layout.find(l => l.clip.id === clip.id);
-      if (!entry) return;
-      const tInMaster = frac * totalDuration;
-      const localT = clip.trimStart + (tInMaster - entry.start);
-      if (isLeft) clip.trimStart = Math.max(0, Math.min(localT, clip.trimEnd - 0.3));
-      else clip.trimEnd = Math.min(clip.duration, Math.max(localT, clip.trimStart + 0.3));
-      recomputeLayout();
-      e.stopPropagation();
-    });
-    function end() { dragging = false; }
-    edgeEl.addEventListener('pointerup', end);
-    edgeEl.addEventListener('pointercancel', end);
+  // ================= DEDICATED CLIP EDITOR (select → big trim handles + move buttons) =================
+  const clipEditCard = document.getElementById('vidClipEditCard');
+  const clipEditName = document.getElementById('vidClipEditName');
+  const editTimeline = document.getElementById('vidEditTimeline');
+  const editRegion = document.getElementById('vidEditRegion');
+  const editHandleStart = document.getElementById('vidEditHandleStart');
+  const editHandleEnd = document.getElementById('vidEditHandleEnd');
+  const editLabelStart = document.getElementById('vidEditLabelStart');
+  const editLabelEnd = document.getElementById('vidEditLabelEnd');
+  const editDurLabel = document.getElementById('vidEditDurLabel');
+  const clipMoveLeftBtn = document.getElementById('vidClipMoveLeft');
+  const clipMoveRightBtn = document.getElementById('vidClipMoveRight');
+  const clipDeleteBtn = document.getElementById('vidClipDelete');
+
+  function selectClip(id) {
+    selectedClipId = id;
+    renderMasterTimeline();
+    layoutClipEditor();
+    clipEditCard.style.display = 'block';
+    const c = clips.find(x => x.id === id);
+    if (c) clipEditName.textContent = '— ' + c.name;
   }
+
+  function layoutClipEditor() {
+    const c = clips.find(x => x.id === selectedClipId);
+    if (!c) { clipEditCard.style.display = 'none'; return; }
+    const dur = c.duration || 1;
+    editRegion.style.left = (c.trimStart / dur * 100) + '%';
+    editRegion.style.right = (100 - (c.trimEnd / dur * 100)) + '%';
+    editLabelStart.textContent = fmtTime(c.trimStart);
+    editLabelEnd.textContent = fmtTime(c.trimEnd);
+    editDurLabel.textContent = 'dura ' + fmtTime(c.trimEnd - c.trimStart);
+  }
+
+  function attachEditHandle(handleEl, isStart) {
+    let dragging = false;
+    handleEl.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      try { handleEl.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    handleEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const c = clips.find(x => x.id === selectedClipId);
+      if (!c) return;
+      const rect = editTimeline.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const t = frac * (c.duration || 1);
+      if (isStart) c.trimStart = Math.max(0, Math.min(t, c.trimEnd - 0.3));
+      else c.trimEnd = Math.min(c.duration, Math.max(t, c.trimStart + 0.3));
+      layoutClipEditor();
+      recomputeLayout();
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    function end(e) { dragging = false; }
+    handleEl.addEventListener('pointerup', end);
+    handleEl.addEventListener('pointercancel', end);
+  }
+  attachEditHandle(editHandleStart, true);
+  attachEditHandle(editHandleEnd, false);
+
+  clipMoveLeftBtn.addEventListener('click', () => {
+    const idx = clips.findIndex(c => c.id === selectedClipId);
+    if (idx > 0) {
+      [clips[idx - 1], clips[idx]] = [clips[idx], clips[idx - 1]];
+      recomputeLayout();
+    }
+  });
+  clipMoveRightBtn.addEventListener('click', () => {
+    const idx = clips.findIndex(c => c.id === selectedClipId);
+    if (idx !== -1 && idx < clips.length - 1) {
+      [clips[idx], clips[idx + 1]] = [clips[idx + 1], clips[idx]];
+      recomputeLayout();
+    }
+  });
+  clipDeleteBtn.addEventListener('click', () => {
+    clips = clips.filter(c => c.id !== selectedClipId);
+    selectedClipId = clips.length ? clips[0].id : null;
+    clipEditCard.style.display = clips.length ? 'block' : 'none';
+    if (selectedClipId) selectClip(selectedClipId);
+    recomputeLayout();
+    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
+  });
 
   function attachTextBlockDrag(el, t) {
     let dragging = false, startX = 0, origStart = 0, origEnd = 0;
@@ -2645,8 +2721,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     scrubbing = true;
     try { masterTimeline.setPointerCapture(e.pointerId); } catch (err) {}
     seekFromEvent(e);
+    e.preventDefault();
   });
-  masterTimeline.addEventListener('pointermove', (e) => { if (scrubbing) seekFromEvent(e); });
+  masterTimeline.addEventListener('pointermove', (e) => { if (scrubbing) { seekFromEvent(e); e.preventDefault(); } });
   masterTimeline.addEventListener('pointerup', () => { scrubbing = false; });
   masterTimeline.addEventListener('pointercancel', () => { scrubbing = false; });
 
