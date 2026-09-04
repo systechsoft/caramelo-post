@@ -321,6 +321,15 @@
     font-size:22px; font-weight:700; text-align:center; white-space:pre-line;
     cursor:grab; touch-action:none; padding:4px 8px; line-height:1.25;
   }
+  .v-stage-logo {
+    position:absolute; left:50%; top:8%; width:26%; transform:translate(-50%,-50%);
+    cursor:grab; touch-action:none;
+  }
+  .v-stage-slogan {
+    position:absolute; left:50%; top:16%; transform:translate(-50%,-50%);
+    color:white; font-family:'Alex Brush'; font-size:18px; text-shadow:1px 2px 4px rgba(0,0,0,0.6);
+    cursor:grab; touch-action:none; white-space:nowrap; padding:4px 8px;
+  }
 
   .v-text-item {
     border:1px solid var(--input-border); border-radius:12px; padding:12px; margin-bottom:12px;
@@ -415,9 +424,13 @@
   .v-clip-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
     background: linear-gradient(135deg,#ff2e9a,#ff8c28);
-    display:flex; align-items:center; justify-content:center;
-    font-size:10.5px; color:white; font-weight:700; overflow:hidden;
+    background-size:cover; background-position:center;
+    display:flex; align-items:flex-end; justify-content:flex-start;
+    font-size:9.5px; color:white; font-weight:700; overflow:hidden;
     border:2px solid transparent; touch-action:none;
+  }
+  .v-clip-block .v-clip-num {
+    background:rgba(0,0,0,0.55); padding:1px 4px; border-radius:4px; margin:2px;
   }
   .v-clip-block.selected { border-color:#fff; }
   .v-clip-edge {
@@ -427,8 +440,12 @@
   .v-clip-edge.left { left:0; border-radius:6px 0 0 6px; }
   .v-clip-edge.right { right:0; border-radius:0 6px 6px 0; }
   .v-transition-mark {
-    position:absolute; top:0; bottom:0; width:4px; background:#fff;
-    opacity:0.85; z-index:2;
+    position:absolute; top:0; bottom:0; width:22px; margin-left:-11px;
+    z-index:3; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .v-transition-mark::after {
+    content:""; width:4px; height:100%; background:#fff; opacity:0.9; border-radius:2px;
   }
   .v-text-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
@@ -740,12 +757,11 @@ TODO INCLUIDO</textarea>
 
   <div class="card">
     <h2><span class="num">2</span> Clips (hasta 8)</h2>
-    <div id="vidClipsContainer"></div>
-    <label class="photo-drop" id="vidDrop" style="margin-top:6px;">
+    <label class="photo-drop" id="vidDrop">
       <span id="vidDropLabel">+ Agregar clip</span>
       <input type="file" id="vidFileInput" accept="video/*">
     </label>
-    <div class="hint">Arrastrá ⠿ para reordenar. Hasta 3 minutos en total entre todos.</div>
+    <div class="hint">Se recortan y reordenan directo en la pista de video de la línea de tiempo, más abajo. Hasta 3 minutos en total entre todos.</div>
   </div>
 
   <div class="card" id="vidTransitionCard" style="display:none;">
@@ -768,8 +784,14 @@ TODO INCLUIDO</textarea>
     <div class="v-stage-wrap">
       <div class="v-stage" id="vidStage">
         <canvas id="vidStageCanvas"></canvas>
+        <div id="vidLogo" class="v-stage-logo"><img id="vidLogoImg" style="width:100%;"></div>
+        <div id="vidSlogan" class="v-stage-slogan">¡La dulce manera de viajar!</div>
         <div id="vidTextsOverlay"></div>
       </div>
+    </div>
+    <div class="toggle-row" style="margin-top:8px;">
+      <span style="font-size:13px;">Mostrar logo y slogan (arrastrables)</span>
+      <label class="switch"><input type="checkbox" id="vidBrandToggle" checked><span class="slider"></span></label>
     </div>
     <div class="hint" style="text-align:center;">Movete por la barra de abajo para revisar todo el video, texto y transiciones incluidos.</div>
 
@@ -787,6 +809,10 @@ TODO INCLUIDO</textarea>
       <div class="v-track-row">
         <span class="v-track-label">📝</span>
         <div class="v-track v-track-texts" id="vidTrackTexts"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">📝</span>
+        <div class="v-track v-track-texts" id="vidTrackTexts2"></div>
       </div>
       <div class="v-track-row">
         <span class="v-track-label">😀</span>
@@ -2222,8 +2248,8 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 </script>
 <script>
 // ============================================================
-// Caramelo Tours — Pestaña Video (Fase 2b: timeline maestro de
-// 4 pistas, vista previa con fundido real, formato/aspecto)
+// Caramelo Tours — Pestaña Video (timeline maestro, logo/slogan,
+// filtro en vivo, 2 pistas de texto, formato)
 // ============================================================
 
 (function () {
@@ -2249,20 +2275,24 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   let selectedTransition = "fade";
 
   const FILTERS = {
-    none:    { label: "Ninguno",   vf: null },
-    warm:    { label: "Cálido",    vf: "eq=gamma_r=1.06:gamma_b=0.94:saturation=1.12" },
-    cold:    { label: "Frío",      vf: "eq=gamma_b=1.08:gamma_r=0.94:saturation=1.05" },
-    bw:      { label: "B&N",       vf: "hue=s=0" },
-    bwhi:    { label: "B&N alto",  vf: "hue=s=0,eq=contrast=1.4" },
-    vintage: { label: "Vintage",   vf: "eq=saturation=0.6:contrast=0.92:gamma_r=1.05:gamma_b=0.92" },
-    cine:    { label: "Cine",      vf: "eq=gamma_r=1.05:gamma_b=0.95:contrast=1.1:saturation=1.08" },
-    vibrant: { label: "Vibrante",  vf: "eq=saturation=1.55:contrast=1.08" },
-    pastel:  { label: "Pastel",    vf: "eq=saturation=0.65:brightness=0.08:contrast=0.9" },
+    none:    { label: "Ninguno",   vf: null,  css: "none" },
+    warm:    { label: "Cálido",    vf: "eq=gamma_r=1.06:gamma_b=0.94:saturation=1.12", css: "saturate(1.15) sepia(0.08)" },
+    cold:    { label: "Frío",      vf: "eq=gamma_b=1.08:gamma_r=0.94:saturation=1.05", css: "saturate(1.05) hue-rotate(5deg)" },
+    bw:      { label: "B&N",       vf: "hue=s=0", css: "grayscale(1)" },
+    bwhi:    { label: "B&N alto",  vf: "hue=s=0,eq=contrast=1.4", css: "grayscale(1) contrast(1.4)" },
+    vintage: { label: "Vintage",   vf: "eq=saturation=0.6:contrast=0.92:gamma_r=1.05:gamma_b=0.92", css: "saturate(0.6) contrast(0.92) sepia(0.15)" },
+    cine:    { label: "Cine",      vf: "eq=gamma_r=1.05:gamma_b=0.95:contrast=1.1:saturation=1.08", css: "contrast(1.1) saturate(1.08)" },
+    vibrant: { label: "Vibrante",  vf: "eq=saturation=1.55:contrast=1.08", css: "saturate(1.55) contrast(1.08)" },
+    pastel:  { label: "Pastel",    vf: "eq=saturation=0.65:brightness=0.08:contrast=0.9", css: "saturate(0.65) brightness(1.08) contrast(0.9)" },
   };
   let selectedFilter = "none";
 
   const ASPECTS = { "9:16": 9/16, "1:1": 1, "4:5": 4/5, "16:9": 16/9 };
   let selectedAspect = "9:16";
+
+  let brandVisible = true;
+  const logoState = { xf: 0.5, yf: 0.08, scale: 1 };
+  const sloganState = { xf: 0.5, yf: 0.16, scale: 1 };
 
   // texts: {id, content, fontFamily, fontFile, start, end, xf, yf, scale}
   let texts = [];
@@ -2278,7 +2308,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   const videoInput = document.getElementById('vidFileInput');
   const videoA = document.getElementById('vidPreview');
   const videoB = document.getElementById('vidPreviewB');
-  const clipsContainer = document.getElementById('vidClipsContainer');
   const transitionCard = document.getElementById('vidTransitionCard');
   const transitionGrid = document.getElementById('vidTransitionGrid');
   const filterGrid = document.getElementById('vidFilterGrid');
@@ -2301,8 +2330,15 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   const playheadEl = document.getElementById('vidPlayhead');
   const trackVideo = document.getElementById('vidTrackVideo');
   const trackTexts = document.getElementById('vidTrackTexts');
-  const masterTimeLabel = document.getElementById('vidMasterTimeLabel');
+  const trackTexts2 = document.getElementById('vidTrackTexts2');
   const masterTotalLabel = document.getElementById('vidMasterTotalLabel');
+  const masterTimeLabel = document.getElementById('vidMasterTimeLabel');
+  const vidLogo = document.getElementById('vidLogo');
+  const vidLogoImg = document.getElementById('vidLogoImg');
+  const vidSlogan = document.getElementById('vidSlogan');
+  const vidBrandToggle = document.getElementById('vidBrandToggle');
+
+  vidLogoImg.src = "data:image/png;base64," + LOGO_B64;
 
   function fmtTime(s) {
     s = Math.max(0, s);
@@ -2327,7 +2363,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   }
   updateStageAspect();
 
-  // ================= FILTER GRID =================
+  // ================= FILTER GRID (with live preview) =================
   function renderFilterGrid() {
     filterGrid.innerHTML = '';
     Object.entries(FILTERS).forEach(([key, f]) => {
@@ -2337,11 +2373,19 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         ? `<img class="thumb" src="data:image/png;base64,${FILTER_THUMBS[key]}" alt="${f.label}">`
         : `<div class="thumb f-${key}"></div>`;
       el.innerHTML = `${thumbSrc}<div class="fname">${f.label}</div>`;
-      el.addEventListener('click', () => { selectedFilter = key; renderFilterGrid(); });
+      el.addEventListener('click', () => {
+        selectedFilter = key;
+        renderFilterGrid();
+        applyLiveFilter();
+      });
       filterGrid.appendChild(el);
     });
   }
   renderFilterGrid();
+
+  function applyLiveFilter() {
+    stageCanvas.style.filter = FILTERS[selectedFilter].css;
+  }
 
   // ================= TRANSITION CHIPS =================
   function renderTransitionGrid() {
@@ -2360,9 +2404,45 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   }
   renderTransitionGrid();
 
+  // ================= BRAND (logo/slogan) =================
+  function renderBrand() {
+    vidLogo.style.display = brandVisible ? 'block' : 'none';
+    vidSlogan.style.display = brandVisible ? 'block' : 'none';
+    vidLogo.style.left = (logoState.xf * 100) + '%';
+    vidLogo.style.top = (logoState.yf * 100) + '%';
+    vidLogo.style.width = (26 * logoState.scale) + '%';
+    vidSlogan.style.left = (sloganState.xf * 100) + '%';
+    vidSlogan.style.top = (sloganState.yf * 100) + '%';
+    vidSlogan.style.fontSize = (18 * sloganState.scale) + 'px';
+  }
+  renderBrand();
+  vidBrandToggle.addEventListener('change', () => {
+    brandVisible = vidBrandToggle.checked;
+    renderBrand();
+  });
+
+  function attachDrag(el, state, onMove) {
+    let dragging = false;
+    el.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      e.stopPropagation();
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const rect = stage.getBoundingClientRect();
+      state.xf = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      state.yf = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      onMove();
+      e.stopPropagation();
+    });
+    el.addEventListener('pointerup', () => { dragging = false; });
+    el.addEventListener('pointercancel', () => { dragging = false; });
+  }
+  attachDrag(vidLogo, logoState, renderBrand);
+  attachDrag(vidSlogan, sloganState, renderBrand);
+
   // ================= CLIP MASTER LAYOUT =================
-  // returns array of {clip, startInMaster, endInMaster} using cumulative
-  // durations minus transition overlaps (same math validated in export)
   function computeClipLayout() {
     const layout = [];
     let cum = 0;
@@ -2422,7 +2502,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       trimStart: 0, trimEnd: meta.duration, videoW: meta.videoW, videoH: meta.videoH, thumb: meta.thumb,
     };
     clips.push(clip);
-    renderClipsList();
     recomputeLayout();
     if (!selectedClipId) selectedClipId = clip.id;
 
@@ -2431,81 +2510,16 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
     if (texts.length === 0) addText();
     renderTextsList();
-  });
 
-  function renderClipsList() {
-    clipsContainer.innerHTML = '';
-    clips.forEach((c) => {
-      const item = document.createElement('div');
-      item.className = 'clip-item' + (c.id === selectedClipId ? ' selected' : '');
-      item.dataset.id = c.id;
-      const thumbHtml = c.thumb ? `<img src="${c.thumb}" alt="">` : '▶';
-      item.innerHTML = `
-        <span class="handle">⠿</span>
-        <div class="clip-thumb">${thumbHtml}</div>
-        <div class="clip-info">
-          <div class="name">${c.name}</div>
-          <div class="dur">${fmtTime(clipDuration(c))}</div>
-        </div>
-        <div class="clip-actions"><button class="del" title="Quitar">✕</button></div>
-      `;
-      item.querySelector('.clip-info').addEventListener('click', () => { selectedClipId = c.id; renderClipsList(); renderMasterTimeline(); });
-      item.querySelector('.del').addEventListener('click', () => removeClip(c.id));
-      attachClipReorder(item, c.id);
-      clipsContainer.appendChild(item);
-    });
     const label = document.getElementById('vidDropLabel');
-    if (clips.length > 0) label.textContent = `+ Agregar clip (${clips.length}/${MAX_CLIPS})`;
-  }
-
-  function attachClipReorder(item, id) {
-    const handle = item.querySelector('.handle');
-    let dragging = false, startY = 0;
-    handle.addEventListener('pointerdown', (e) => {
-      dragging = true; startY = e.clientY;
-      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-      item.style.zIndex = 10; e.stopPropagation();
-    });
-    handle.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const dy = e.clientY - startY;
-      item.style.transform = `translateY(${dy}px)`; item.style.opacity = '0.85';
-      const siblings = [...clipsContainer.children];
-      const myIndex = siblings.indexOf(item);
-      const itemRect = item.getBoundingClientRect();
-      const midY = itemRect.top + itemRect.height / 2 + dy;
-      for (let i = 0; i < siblings.length; i++) {
-        if (siblings[i] === item) continue;
-        const r = siblings[i].getBoundingClientRect();
-        const sMid = r.top + r.height / 2;
-        if ((i < myIndex && midY < sMid) || (i > myIndex && midY > sMid)) {
-          const fromIdx = clips.findIndex(c => c.id === id);
-          const [moved] = clips.splice(fromIdx, 1);
-          clips.splice(i, 0, moved);
-          renderClipsList();
-          recomputeLayout();
-          return;
-        }
-      }
-      e.stopPropagation();
-    });
-    function endDrag() { dragging = false; item.style.transform = ''; item.style.opacity = ''; item.style.zIndex = ''; }
-    handle.addEventListener('pointerup', endDrag);
-    handle.addEventListener('pointercancel', endDrag);
-  }
-
-  function removeClip(id) {
-    clips = clips.filter(c => c.id !== id);
-    if (selectedClipId === id) selectedClipId = clips.length ? clips[0].id : null;
-    renderClipsList();
-    recomputeLayout();
-    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
-  }
+    label.textContent = `+ Agregar clip (${clips.length}/${MAX_CLIPS})`;
+  });
 
   // ================= MASTER TIMELINE RENDER =================
   function renderMasterTimeline() {
     trackVideo.innerHTML = '';
     trackTexts.innerHTML = '';
+    trackTexts2.innerHTML = '';
     if (totalDuration <= 0) return;
 
     const layout = computeClipLayout();
@@ -2514,12 +2528,18 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       block.className = 'v-clip-block' + (clip.id === selectedClipId ? ' selected' : '');
       block.style.left = (start / totalDuration * 100) + '%';
       block.style.width = Math.max(0.5, (end - start) / totalDuration * 100) + '%';
-      block.textContent = (i + 1);
+      if (clip.thumb) {
+        block.style.backgroundImage = `url(${clip.thumb})`;
+        block.style.backgroundSize = 'cover';
+        block.style.backgroundPosition = 'center';
+        block.innerHTML = `<span style="background:rgba(0,0,0,0.55); border-radius:4px; padding:0 4px;">${i + 1}</span>`;
+      } else {
+        block.textContent = (i + 1);
+      }
       block.innerHTML += `<div class="v-clip-edge left"></div><div class="v-clip-edge right"></div>`;
       block.addEventListener('pointerdown', (e) => {
         if (e.target.classList.contains('v-clip-edge')) return;
         selectedClipId = clip.id;
-        renderClipsList();
         renderMasterTimeline();
       });
       attachClipEdgeDrag(block.querySelector('.left'), clip, true);
@@ -2541,7 +2561,8 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       block.style.width = Math.max(1, (t.end - t.start) / totalDuration * 100) + '%';
       block.textContent = `T${idx + 1}`;
       attachTextBlockDrag(block, t);
-      trackTexts.appendChild(block);
+      // alternate between the two text tracks so overlapping texts don't collide
+      (idx % 2 === 0 ? trackTexts : trackTexts2).appendChild(block);
     });
 
     masterTotalLabel.textContent = fmtTime(totalDuration);
@@ -2567,7 +2588,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       if (isLeft) clip.trimStart = Math.max(0, Math.min(localT, clip.trimEnd - 0.3));
       else clip.trimEnd = Math.min(clip.duration, Math.max(localT, clip.trimStart + 0.3));
       recomputeLayout();
-      renderClipsList();
       e.stopPropagation();
     });
     function end() { dragging = false; }
@@ -2576,9 +2596,9 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   }
 
   function attachTextBlockDrag(el, t) {
-    let dragging = false, mode = null, startX = 0, origStart = 0, origEnd = 0;
+    let dragging = false, startX = 0, origStart = 0, origEnd = 0;
     el.addEventListener('pointerdown', (e) => {
-      dragging = true; mode = 'move'; startX = e.clientX; origStart = t.start; origEnd = t.end;
+      dragging = true; startX = e.clientX; origStart = t.start; origEnd = t.end;
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
       e.stopPropagation();
     });
@@ -2631,8 +2651,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   masterTimeline.addEventListener('pointercancel', () => { scrubbing = false; });
 
   // ================= MASTER PREVIEW (frame compositor) =================
-  const pendingSeeks = { A: null, B: null };
-  function seekVideoTo(videoEl, key, file, localTime) {
+  async function seekVideoTo(videoEl, file, localTime) {
     return new Promise((resolve) => {
       const needsNewSrc = videoEl.dataset.fileRef !== file.name + file.size;
       const onSeeked = () => { videoEl.removeEventListener('seeked', onSeeked); resolve(); };
@@ -2659,7 +2678,6 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     const active = layout[activeIdx];
     const localTimeA = active.clip.trimStart + (playheadTime - active.start);
 
-    // check if we're inside a transition zone with the NEXT clip
     let blendProgress = 0;
     let nextEntry = null;
     if (selectedTransition !== 'none' && activeIdx < layout.length - 1) {
@@ -2670,7 +2688,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       }
     }
 
-    await seekVideoTo(videoA, 'A', active.clip.file, Math.max(0, localTimeA));
+    await seekVideoTo(videoA, active.clip.file, Math.max(0, localTimeA));
 
     stageCanvas.width = active.clip.videoW;
     stageCanvas.height = active.clip.videoH;
@@ -2680,7 +2698,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
     if (nextEntry && blendProgress > 0) {
       const localTimeB = nextEntry.clip.trimStart + (playheadTime - nextEntry.start);
-      await seekVideoTo(videoB, 'B', nextEntry.clip.file, Math.max(0, localTimeB));
+      await seekVideoTo(videoB, nextEntry.clip.file, Math.max(0, localTimeB));
       ctx.globalAlpha = blendProgress;
       try { ctx.drawImage(videoB, 0, 0, stageCanvas.width, stageCanvas.height); } catch (err) {}
       ctx.globalAlpha = 1;
@@ -2725,7 +2743,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     el.addEventListener('pointercancel', () => { dragging = false; });
   }
 
-  // ================= TEXTS LIST (content/font/size only — timing lives on the master timeline) =================
+  // ================= TEXTS LIST (content/font/size — timing lives on the master timeline) =================
   function addText() {
     if (texts.length >= MAX_TEXTS) return;
     const pos = DEFAULT_POSITIONS[texts.length] || { xf: 0.5, yf: 0.7 };
@@ -2785,7 +2803,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           <span style="font-size:13px; opacity:0.8;">Tamaño</span>
           <div class="sizebtn v-text-plus">+</div>
         </div>
-        <div class="hint">Tiempo: <span class="v-text-time-label" data-id="${t.id}">${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s</span> — arrastrá el bloque naranja "T${idx+1}" en la línea de tiempo de arriba para moverlo.</div>
+        <div class="hint">Tiempo: <span class="v-text-time-label" data-id="${t.id}">${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s</span> — arrastrá el bloque "T${idx+1}" en la línea de tiempo de arriba para moverlo.</div>
       `;
       textsContainer.appendChild(item);
 
@@ -2855,6 +2873,16 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     return virtualName;
   }
 
+  async function ensureAlexBrushInFFmpegFS() {
+    const virtualName = 'AlexBrush.ttf';
+    if (loadedVideoFonts.has(virtualName)) return virtualName;
+    const resp = await fetch(VIDEO_ENGINE_BASE_URL + 'AlexBrush.ttf');
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    await ffmpeg.writeFile(virtualName, bytes);
+    loadedVideoFonts.add(virtualName);
+    return virtualName;
+  }
+
   function escapeDrawtext(text) {
     return text
       .replace(/\\/g, '\\\\\\\\')
@@ -2883,6 +2911,13 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         const buf = new Uint8Array(await c.file.arrayBuffer());
         await ffmpeg.writeFile(`clip${i}.mp4`, buf);
         args.push('-ss', String(c.trimStart), '-t', String(clipDuration(c)), '-i', `clip${i}.mp4`);
+      }
+
+      const logoInputIdx = clips.length;
+      if (brandVisible) {
+        const logoBytes = Uint8Array.from(atob(LOGO_B64), c => c.charCodeAt(0));
+        await ffmpeg.writeFile('logo.png', logoBytes);
+        args.push('-i', 'logo.png');
       }
 
       let filterComplex = '';
@@ -2922,6 +2957,18 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       filterComplex += `[${curLabel}]crop='min(iw,ih*${targetRatio})':'min(ih,iw/${targetRatio})':(iw-ow)/2:(ih-oh)/2[vcrop];`;
       curLabel = 'vcrop';
 
+      // logo + slogan overlay (burned in for the whole duration)
+      if (brandVisible) {
+        filterComplex += `[${logoInputIdx}:v]scale=iw*0.5:-1[logoscaled];`;
+        filterComplex += `[${curLabel}][logoscaled]overlay=x=(main_w*${logoState.xf}-overlay_w/2):y=(main_h*${logoState.yf}-overlay_h/2)[vlogo];`;
+        curLabel = 'vlogo';
+
+        const alexBrushName = await ensureAlexBrushInFFmpegFS();
+        const sloganSize = Math.round((clips[0].videoH || 1920) * 0.022 * sloganState.scale);
+        filterComplex += `[${curLabel}]drawtext=fontfile=${alexBrushName}:text='¡La dulce manera de viajar\u2019':fontcolor=white:fontsize=${sloganSize}:borderw=2:bordercolor=black:x=(main_w*${sloganState.xf}-text_w/2):y=(main_h*${sloganState.yf}-text_h/2)[vslogan];`;
+        curLabel = 'vslogan';
+      }
+
       // texts
       const activeTexts = texts.filter(t => t.content.trim());
       const baseFontSize = Math.round((clips[0].videoH || 1920) * 0.045);
@@ -2939,7 +2986,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
       args.push('-filter_complex', filterComplex);
       args.push('-map', `[${curLabel}]`);
-      args.push('-map', `[${aOut}]`);
+      // aOut is a real filter_complex label (needs brackets) only when there's
+      // more than one clip (concat/xfade produces a labeled audio output);
+      // with a single clip it's still the raw input stream reference "0:a".
+      args.push('-map', clips.length > 1 ? `[${aOut}]` : aOut);
       args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
       args.push('out.mp4');
 
@@ -2958,7 +3008,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
       console.error(err);
-      showFatalError('al procesar el video: ' + err.message);
+      showFatalError('al procesar el video: ' + (err && (err.message || err.toString())));
     } finally {
       loadingMsg.style.display = 'none';
       generateBtn.disabled = false;
