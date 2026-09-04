@@ -334,9 +334,20 @@
     cursor:grab; touch-action:none; white-space:nowrap; padding:4px 8px;
   }
   .v-play-btn {
-    position:absolute; right:10px; bottom:10px; width:42px; height:42px; border-radius:50%;
-    background:rgba(0,0,0,0.55); color:white; border:2px solid rgba(255,255,255,0.6);
-    font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:6;
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:64px; height:64px; border-radius:0;
+    background:transparent; color:white; border:none;
+    font-size:0; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:6;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+  }
+  .v-play-btn::before {
+    content:""; width:0; height:0;
+    border-top:20px solid transparent; border-bottom:20px solid transparent;
+    border-left:32px solid white; margin-left:8px;
+  }
+  .v-play-btn.playing::before {
+    border:none; width:14px; height:34px; margin-left:0;
+    border-left:10px solid white; border-right:10px solid white;
   }
   .v-emoji-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
@@ -377,8 +388,8 @@
   .v-stage-trim-dim-l { left:0; }
   .v-stage-trim-dim-r { right:0; }
   .v-stage-trim-handle {
-    position:absolute; top:0; bottom:0; width:26px; background:#ff2e9a;
-    display:flex; align-items:center; justify-content:center; color:white; font-size:13px;
+    position:absolute; top:0; bottom:0; width:38px; background:#ff2e9a;
+    display:flex; align-items:center; justify-content:center; color:white; font-size:16px; font-weight:800;
     cursor:ew-resize; touch-action:none; z-index:8;
   }
 
@@ -449,6 +460,7 @@
   .chip {
     padding:9px 14px; border-radius:20px; border:1px solid var(--input-border);
     background: var(--input-bg); color:var(--text-main); font-size:12.5px; font-weight:600; cursor:pointer;
+    touch-action: manipulation; user-select: none;
   }
   .chip.active { background:#ff2e9a; border-color:#ff2e9a; color:white; }
 
@@ -817,11 +829,11 @@ TODO INCLUIDO</textarea>
           <div class="v-stage-trim-handle" id="vidStageTrimHandleL">◀</div>
           <div class="v-stage-trim-handle" id="vidStageTrimHandleR">▶</div>
         </div>
-        <button id="vidPlayBtn" class="v-play-btn">▶</button>
+        <button id="vidPlayBtn" class="v-play-btn"></button>
       </div>
     </div>
 
-    <!-- icon toolbar: tap to open/close a small panel — nothing stays open by default -->
+    <!-- icon toolbar: tap to open/close a small panel below the tracks — nothing stays open by default -->
     <div class="v-icon-toolbar">
       <div class="v-icon-btn" data-panel="panelFormat"><span>📐</span>Formato</div>
       <div class="v-icon-btn" data-panel="panelFilter"><span>🎨</span>Filtro</div>
@@ -829,6 +841,52 @@ TODO INCLUIDO</textarea>
       <div class="v-icon-btn" data-panel="panelText"><span>📝</span>Texto</div>
       <div class="v-icon-btn" data-panel="panelEmoji"><span>😀</span>Emoji</div>
       <div class="v-icon-btn" data-panel="panelBrand"><span>🏷️</span>Logo</div>
+    </div>
+
+    <div class="v-master-timeline" id="vidMasterTimeline">
+      <div class="v-master-playhead" id="vidPlayhead"></div>
+
+      <div class="v-track-row">
+        <span class="v-track-label">🎬</span>
+        <div class="v-track v-track-video" id="vidTrackVideo"></div>
+        <div class="v-add-clip-icon" id="vidAddClipIcon">+</div>
+        <input type="file" id="vidFileInput" accept="video/*" style="display:none;">
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">🎵</span>
+        <div class="v-track v-track-audio" id="vidTrackAudio"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">📝</span>
+        <div class="v-track v-track-texts" id="vidTrackTexts"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">📝</span>
+        <div class="v-track v-track-texts" id="vidTrackTexts2"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row">
+        <span class="v-track-label">😀</span>
+        <div class="v-track v-track-emoji" id="vidTrackEmoji"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+    </div>
+    <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00 / hasta 3:00</span></div>
+    <div class="hint" id="vidEmptyHint">Tocá el + de la pista 🎬 para agregar tu primer clip.</div>
+
+    <div id="vidClipEditCard" style="display:none;">
+      <div class="v-clip-edit-head">
+        <span id="vidClipEditName" style="font-weight:700; font-size:13px;"></span>
+        <span id="vidEditDurLabel" style="font-weight:700; font-size:13px; opacity:0.8;"></span>
+      </div>
+      <div class="anuncios-toolbar" style="margin-top:8px;">
+        <button type="button" id="vidClipMoveLeft">◀ Mover antes</button>
+        <button type="button" id="vidClipMoveRight">Mover después ▶</button>
+        <button type="button" id="vidClipDelete" style="color:#ff5a5a; border-color:rgba(255,90,90,0.4);">✕ Quitar</button>
+      </div>
+      <div class="hint">Arrastrá las manijas rosadas de abajo del video (arriba de esta tarjeta) para recortar el inicio y el final.</div>
     </div>
 
     <div class="v-panel" id="panelFormat">
@@ -893,52 +951,6 @@ TODO INCLUIDO</textarea>
         <span style="font-size:13px;">Mostrar logo y slogan (arrastrables sobre el video)</span>
         <label class="switch"><input type="checkbox" id="vidBrandToggle" checked><span class="slider"></span></label>
       </div>
-    </div>
-
-    <div class="v-master-timeline" id="vidMasterTimeline">
-      <div class="v-master-playhead" id="vidPlayhead"></div>
-
-      <div class="v-track-row">
-        <span class="v-track-label">🎬</span>
-        <div class="v-track v-track-video" id="vidTrackVideo"></div>
-        <div class="v-add-clip-icon" id="vidAddClipIcon">+</div>
-        <input type="file" id="vidFileInput" accept="video/*" style="display:none;">
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">🎵</span>
-        <div class="v-track v-track-audio" id="vidTrackAudio"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">📝</span>
-        <div class="v-track v-track-texts" id="vidTrackTexts"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">📝</span>
-        <div class="v-track v-track-texts" id="vidTrackTexts2"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">😀</span>
-        <div class="v-track v-track-emoji" id="vidTrackEmoji"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-    </div>
-    <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00 / hasta 3:00</span></div>
-    <div class="hint" id="vidEmptyHint">Tocá el + de la pista 🎬 para agregar tu primer clip.</div>
-
-    <div id="vidClipEditCard" style="display:none;">
-      <div class="v-clip-edit-head">
-        <span id="vidClipEditName" style="font-weight:700; font-size:13px;"></span>
-        <span id="vidEditDurLabel" style="font-weight:700; font-size:13px; opacity:0.8;"></span>
-      </div>
-      <div class="anuncios-toolbar" style="margin-top:8px;">
-        <button type="button" id="vidClipMoveLeft">◀ Mover antes</button>
-        <button type="button" id="vidClipMoveRight">Mover después ▶</button>
-        <button type="button" id="vidClipDelete" style="color:#ff5a5a; border-color:rgba(255,90,90,0.4);">✕ Quitar</button>
-      </div>
-      <div class="hint">Arrastrá las manijas rosadas de abajo del video (arriba de esta tarjeta) para recortar el inicio y el final.</div>
     </div>
   </div>
 
@@ -2744,28 +2756,70 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     el.addEventListener('pointercancel', end);
   }
 
-  // ================= PLAY (preview through the whole timeline) =================
+  // ================= PLAY (real playback with audio, clip by clip) =================
+  let playClipIdx = 0;
+
   playBtn.addEventListener('click', () => {
     if (playing) { stopPlayback(); return; }
-    if (!totalDuration) return;
+    if (!totalDuration || clips.length === 0) return;
     playing = true;
-    playBtn.textContent = '⏸';
-    playLastTs = performance.now();
-    playRafId = requestAnimationFrame(playTick);
+    playBtn.classList.add('playing');
+    startPlayingFromTime(playheadTime);
   });
+
   function stopPlayback() {
     playing = false;
-    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+    videoA.pause();
     if (playRafId) cancelAnimationFrame(playRafId);
   }
-  function playTick(ts) {
+
+  function startPlayingFromTime(t) {
+    const layout = computeClipLayout();
+    let idx = layout.findIndex(l => t >= l.start && t < l.end);
+    if (idx === -1) idx = 0;
+    playClipIdx = idx;
+    const entry = layout[idx];
+    const localTime = entry.clip.trimStart + Math.max(0, t - entry.start);
+    seekVideoTo(videoA, entry.clip.file, localTime).then(() => {
+      videoA.muted = false;
+      videoA.volume = (audioMode === 'mute') ? 0 : 1;
+      videoA.play().catch(() => {});
+      playRafId = requestAnimationFrame(playTick);
+    });
+  }
+
+  function playTick() {
     if (!playing) return;
-    const dt = (ts - playLastTs) / 1000;
-    playLastTs = ts;
-    playheadTime += dt;
-    if (playheadTime >= totalDuration) { playheadTime = 0; stopPlayback(); layoutPlayhead(); updateMasterPreview(); return; }
+    const layout = computeClipLayout();
+    const entry = layout[playClipIdx];
+    if (!entry) { stopPlayback(); return; }
+
+    // reached the trimmed-out end of this clip → hard-cut to the next one
+    if (videoA.currentTime >= entry.clip.trimEnd - 0.03) {
+      if (playClipIdx < clips.length - 1) {
+        playClipIdx++;
+        const nextEntry = layout[playClipIdx];
+        seekVideoTo(videoA, nextEntry.clip.file, nextEntry.clip.trimStart).then(() => {
+          videoA.play().catch(() => {});
+        });
+        playheadTime = nextEntry.start;
+        layoutPlayhead();
+        playRafId = requestAnimationFrame(playTick);
+        return;
+      } else {
+        playheadTime = 0;
+        stopPlayback();
+        layoutPlayhead();
+        updateMasterPreview();
+        return;
+      }
+    }
+
+    playheadTime = entry.start + (videoA.currentTime - entry.clip.trimStart);
     layoutPlayhead();
-    updateMasterPreview();
+    drawStageFrame();
+    renderTextsOverlayForTime(playheadTime);
     playRafId = requestAnimationFrame(playTick);
   }
 
@@ -3030,16 +3084,18 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   // ================= PLAYHEAD =================
   function layoutPlayhead() {
     if (!totalDuration) { playheadEl.style.left = '0%'; return; }
-    playheadEl.style.left = (playheadTime / totalDuration * 100) + '%';
+    const pct = Math.max(0, Math.min(100, playheadTime / totalDuration * 100));
+    playheadEl.style.left = pct + '%';
     masterTimeLabel.textContent = fmtTime(playheadTime);
   }
 
   let scrubbing = false;
   function seekFromEvent(e) {
     if (!totalDuration) return;
+    if (playing) stopPlayback();
     const rect = masterTimeline.getBoundingClientRect();
     const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    playheadTime = frac * totalDuration;
+    playheadTime = Math.max(0, Math.min(totalDuration, frac * totalDuration));
     layoutPlayhead();
     updateMasterPreview();
   }
