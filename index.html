@@ -28,6 +28,7 @@
     --input-border: rgba(255,255,255,0.18);
     --hint-color: #ffffff;
     --stage-bg: #1a2a3a;
+    --track-bg: rgba(255,255,255,0.07);
   }
   body[data-theme="light"] {
     --bg-grad-top: #eef3f8;
@@ -37,6 +38,7 @@
     --card-border: rgba(20,30,40,0.12);
     --input-bg: rgba(255,255,255,0.9);
     --input-border: rgba(20,30,40,0.18);
+    --track-bg: rgba(20,30,40,0.09);
     --hint-color: #16202b;
   }
   body {
@@ -264,8 +266,8 @@
   .toggle-row { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
   .switch { position:relative; width:46px; height:26px; }
   .switch input { opacity:0; width:0; height:0; }
-  .switch .slider { position:absolute; inset:0; background:rgba(255,255,255,0.2); border-radius:26px; transition:.2s; cursor:pointer; }
-  .switch .slider:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:white; border-radius:50%; transition:.2s; }
+  .switch .slider { position:absolute; inset:0; background:var(--input-bg); border:1px solid var(--input-border); border-radius:26px; transition:.2s; cursor:pointer; }
+  .switch .slider:before { content:""; position:absolute; width:20px; height:20px; left:2px; top:2px; background:var(--text-main); border-radius:50%; transition:.2s; }
   .switch input:checked + .slider { background:#ff2e9a; }
   .switch input:checked + .slider:before { transform: translateX(20px); }
 
@@ -330,6 +332,18 @@
     color:white; font-family:'Alex Brush'; font-size:18px; text-shadow:1px 2px 4px rgba(0,0,0,0.6);
     cursor:grab; touch-action:none; white-space:nowrap; padding:4px 8px;
   }
+  .v-play-btn {
+    position:absolute; right:10px; bottom:10px; width:42px; height:42px; border-radius:50%;
+    background:rgba(0,0,0,0.55); color:white; border:2px solid rgba(255,255,255,0.6);
+    font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:6;
+  }
+  .v-emoji-block {
+    position:absolute; top:2px; bottom:2px; border-radius:6px;
+    background: rgba(120,80,255,0.5); border:1px solid #7850ff;
+    display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none;
+  }
+  .v-emoji-block img { width:20px; height:20px; }
+  .v-stage-emoji { position:absolute; left:0; top:0; transform:translate(-50%,-50%); width:52px; cursor:grab; touch-action:none; }
 
   .v-text-item {
     border:1px solid var(--input-border); border-radius:12px; padding:12px; margin-bottom:12px;
@@ -404,22 +418,22 @@
     position:relative; margin-top:14px; padding-top:14px; touch-action:none;
   }
   .v-master-playhead {
-    position:absolute; top:0; bottom:0; left:0; width:2px; background:#ffffff;
+    position:absolute; top:0; bottom:0; left:0; width:2px; background:var(--text-main);
     z-index:5; pointer-events:none;
   }
   .v-master-playhead::before {
     content:""; position:absolute; top:-6px; left:-6px; width:14px; height:14px;
-    background:#ffffff; border-radius:50%;
+    background:var(--text-main); border-radius:50%; border:2px solid #ff2e9a;
   }
   .v-track-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; touch-action:none; }
   .v-track-label { width:22px; text-align:center; font-size:15px; flex-shrink:0; }
   .v-track {
-    position:relative; flex:1; height:40px; border-radius:8px;
-    background: var(--input-bg); border:1px solid var(--input-border); overflow:hidden; touch-action:none;
+    position:relative; flex:1; width:0; height:40px; border-radius:8px;
+    background: var(--track-bg); border:1px solid var(--input-border); overflow:hidden; touch-action:none;
   }
   .v-track-disabled {
     display:flex; align-items:center; justify-content:center;
-    font-size:11px; opacity:0.45; color:var(--text-main);
+    font-size:11px; opacity:0.55; color:var(--text-main);
   }
   .v-clip-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
@@ -432,7 +446,7 @@
   .v-clip-block .v-clip-num {
     background:rgba(0,0,0,0.55); padding:1px 4px; border-radius:4px; margin:2px;
   }
-  .v-clip-block.selected { border-color:#fff; }
+  .v-clip-block.selected { border-color:#ff2e9a; box-shadow:0 0 0 1px #ff2e9a; }
   .v-clip-edge {
     position:absolute; top:0; bottom:0; width:12px; background:rgba(255,255,255,0.4);
     cursor:ew-resize; touch-action:none;
@@ -445,7 +459,7 @@
     display:flex; align-items:center; justify-content:center;
   }
   .v-transition-mark::after {
-    content:""; width:4px; height:100%; background:#fff; opacity:0.9; border-radius:2px;
+    content:""; width:4px; height:100%; background:var(--text-main); opacity:0.9; border-radius:2px;
   }
   .v-text-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
@@ -755,31 +769,11 @@ TODO INCLUIDO</textarea>
     </div>
   </div>
 
-  <div class="card">
-    <h2><span class="num">2</span> Clips (hasta 8)</h2>
-    <label class="photo-drop" id="vidDrop">
-      <span id="vidDropLabel">+ Agregar clip</span>
-      <input type="file" id="vidFileInput" accept="video/*">
-    </label>
-    <div class="hint">Se recortan y reordenan directo en la pista de video de la línea de tiempo, más abajo. Hasta 3 minutos en total entre todos.</div>
-  </div>
-
-  <div class="card" id="vidTransitionCard" style="display:none;">
-    <h2><span class="num">3</span> Transición entre clips</h2>
-    <div class="chip-grid" id="vidTransitionGrid"></div>
-    <div class="hint">Se aplica entre cada par de clips consecutivos. "Corte seco" es instantáneo, sin efecto.</div>
-  </div>
-
-  <div class="card">
-    <h2><span class="num">4</span> Filtro de color</h2>
-    <div class="filter-grid" id="vidFilterGrid"></div>
-  </div>
-
   <video id="vidPreview" style="display:none;"></video>
   <video id="vidPreviewB" style="display:none;"></video>
 
   <div class="card" id="vidMasterCard" style="display:none;">
-    <h2><span class="num">5</span> Vista previa y línea de tiempo maestra</h2>
+    <h2><span class="num">2</span> Vista previa y línea de tiempo</h2>
 
     <div class="v-stage-wrap">
       <div class="v-stage" id="vidStage">
@@ -787,13 +781,15 @@ TODO INCLUIDO</textarea>
         <div id="vidLogo" class="v-stage-logo"><img id="vidLogoImg" style="width:100%;"></div>
         <div id="vidSlogan" class="v-stage-slogan">¡La dulce manera de viajar!</div>
         <div id="vidTextsOverlay"></div>
+        <div id="vidEmojisOverlay"></div>
+        <button id="vidPlayBtn" class="v-play-btn">▶</button>
       </div>
     </div>
     <div class="toggle-row" style="margin-top:8px;">
       <span style="font-size:13px;">Mostrar logo y slogan (arrastrables)</span>
       <label class="switch"><input type="checkbox" id="vidBrandToggle" checked><span class="slider"></span></label>
     </div>
-    <div class="hint" style="text-align:center;">Movete por la barra de abajo para revisar todo el video, texto y transiciones incluidos.</div>
+    <div class="hint" style="text-align:center;">Tocá ▶ para reproducir todo (con transiciones) antes de generar. Tocá un clip de la pista de abajo para recortarlo o moverlo.</div>
 
     <div class="v-master-timeline" id="vidMasterTimeline">
       <div class="v-master-playhead" id="vidPlayhead"></div>
@@ -804,7 +800,7 @@ TODO INCLUIDO</textarea>
       </div>
       <div class="v-track-row">
         <span class="v-track-label">🎵</span>
-        <div class="v-track v-track-disabled">Próximamente</div>
+        <div class="v-track v-track-audio" id="vidTrackAudio"></div>
       </div>
       <div class="v-track-row">
         <span class="v-track-label">📝</span>
@@ -816,14 +812,23 @@ TODO INCLUIDO</textarea>
       </div>
       <div class="v-track-row">
         <span class="v-track-label">😀</span>
-        <div class="v-track v-track-disabled">Próximamente</div>
+        <div class="v-track v-track-emoji" id="vidTrackEmoji"></div>
       </div>
     </div>
     <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00</span></div>
   </div>
 
+  <div class="card">
+    <h2><span class="num">3</span> Clips (hasta 8)</h2>
+    <label class="photo-drop" id="vidDrop">
+      <span id="vidDropLabel">+ Agregar clip</span>
+      <input type="file" id="vidFileInput" accept="video/*">
+    </label>
+    <div class="hint">Tocá un clip en la pista 🎬 de arriba para recortarlo o moverlo. Hasta 3 minutos en total entre todos.</div>
+  </div>
+
   <div class="card" id="vidClipEditCard" style="display:none;">
-    <h2><span class="num">6</span> Clip seleccionado <span id="vidClipEditName" style="opacity:0.7; font-weight:400; font-size:13px;"></span></h2>
+    <h2><span class="num">4</span> Clip seleccionado <span id="vidClipEditName" style="opacity:0.7; font-weight:400; font-size:13px;"></span></h2>
     <div class="hint">Arrastrá las manijas rosadas para recortar el inicio y el final de este clip.</div>
     <div class="v-timeline" id="vidEditTimeline">
       <div class="v-timeline-region" id="vidEditRegion">
@@ -843,8 +848,60 @@ TODO INCLUIDO</textarea>
     </div>
   </div>
 
+  <div class="card" id="vidTransitionCard" style="display:none;">
+    <h2><span class="num">5</span> Transición entre clips</h2>
+    <div class="chip-grid" id="vidTransitionGrid"></div>
+    <div class="hint">Se aplica entre cada par de clips consecutivos. "Corte seco" es instantáneo, sin efecto.</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">6</span> Filtro de color</h2>
+    <div class="filter-grid" id="vidFilterGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">7</span> Audio</h2>
+    <div class="audio-modes" id="vidAudioModes">
+      <button data-mode="original" class="active">🎵 Original</button>
+      <button data-mode="music">🎶 Solo música</button>
+      <button data-mode="both">🎧 Ambos</button>
+      <button data-mode="mute">🔇 Silencio</button>
+    </div>
+    <div id="vidMusicUploadWrap" style="display:none; margin-top:10px;">
+      <label class="photo-drop" id="vidMusicDrop">
+        <span id="vidMusicDropLabel">+ Subir mi música</span>
+        <input type="file" id="vidMusicInput" accept="audio/*">
+      </label>
+    </div>
+    <div class="fade-row">
+      <div class="fade-col">
+        <label>Entrada gradual</label>
+        <div class="el-controls">
+          <div class="sizebtn" id="vidFadeInMinus">−</div>
+          <span id="vidFadeInLabel" style="font-size:13px; opacity:0.8;">0.5s</span>
+          <div class="sizebtn" id="vidFadeInPlus">+</div>
+        </div>
+      </div>
+      <div class="fade-col">
+        <label>Salida gradual</label>
+        <div class="el-controls">
+          <div class="sizebtn" id="vidFadeOutMinus">−</div>
+          <span id="vidFadeOutLabel" style="font-size:13px; opacity:0.8;">0.5s</span>
+          <div class="sizebtn" id="vidFadeOutPlus">+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="vidEmojiCard" style="display:none;">
+    <h2><span class="num">8</span> Emojis (hasta 6)</h2>
+    <div class="filter-grid" id="vidEmojiGrid"></div>
+    <div class="hint">Tocá uno para agregarlo. Se puede mover y tiene su propio tiempo en la pista 😀 de arriba.</div>
+    <div id="vidEmojiList"></div>
+  </div>
+
   <div class="card" id="vidTextsCard" style="display:none;">
-    <h2><span class="num">7</span> Textos (hasta 4)</h2>
+    <h2><span class="num">9</span> Textos (hasta 4)</h2>
     <div id="vidTextsContainer"></div>
     <button class="add-clip-btn" id="vidAddTextBtn" style="margin-top:10px;">+ Agregar texto</button>
   </div>
@@ -2268,6 +2325,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
 </script>
 <script>
+const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB40lEQVR4nO1bwXHDMAxTeh2hk/TdETpuR8g7k3SH9MWeo1gSRQOkFAuv3DkhAQiWebGd0sK5cfFsdv/5umu/e/m+unCjNukR3ALLEEpRpPAcaCNgxZiiS0CY8YYgEiEe1feQg1HC92BNgzkBI4lPyc7HZMBo4gUWXt0GjCpe0Muvy4DRxQt6eKoNmEW8QMtXZcBs4gUa3k0DZhUvaPGvGjC7eEFNB2QSnBnF6Ym2+p8f9eO3X0rblPanxV0DKOJbwnOQjMhNeKd02aJXeP47YiJSYu8BVvHoGhU8GQCLP5I4sFauj5MAxqqRkvBgAGT1mZEF1d7qxCaAfL4yepx+EMIZ4LH6hF7/BrzK3K+F6MUkwHP1wT3XHhBNIBrLgGgC0VgGRBOIxjIAUoX8pwWz50qAfDj8sIFnCgC9RO9KALSaRwrAPfAJYJpAqP1gAOwJLIYJwJpbnbw9AGkCMVVPBkCfw0MQB4v3vzMkAga5NZaDb4BAa4TzVOl/dzgQe6d3cRP0elrbCyU9axKsHXyVFNR0NBMwuwkt/qpTYFYTNLzVe8BsJmj5dm2Cs5jQw7P7KjC6Cb38TJfBUU2w8DLPAaOZYOUDERE5Nh9dCMgkGJUGRN/13iCyWI7TvjlawojvDp8ef0nfvFMHn1AtAAAAAElFTkSuQmCC", "moon": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACRklEQVR4nO2boVIEMQyGfxie4/RiUYjzWDSKh+AxeAgUGotHoLCc5kVAhbnZ27ZJmjTtXH93M7fd/F/TtNvuAlPnrYuWN1tuHn65/z18vTaJzfUmEsMleQFxadTS+FrWIMwa8zSdkgWMS4tAIsxb3beKYJTxLWmzQZ0BPZkH9PGoAPRmnqSJS5w2XuZ3y774n5/DB6styXAQAbA2zzGdUgkGFwIbgJX5789nAMDd41t1WxYQWABqzZNpwMb4WjkQJQhFADXmj40DPuZJWgjZWWAU80C+nuR8XFkHsjYO+Jsn7ZY9e6YgJTNA0/uR5kmpTEj52QQwqnmSBILJw9DIMgHQU++TuIusEwDS9N8y37PW/uYQOP5h1fvR6U/iFMOZAdEBREsNYLTil9I/gF53ebxEfucQiA4gWhOAR6PvL/cezYrFeTSeGRAdQLTcAEQPA+7OkBrA9e2T9tKu5DoEorJAsi/oXgNaQ1BvimqOl7nDoBUEiXny22wW8IYg7XlSNQBJMfSCoDUPrI7GLE+CSmpxOJrT5hBo9W4eUJ8NFuaBjcPRlllwLE5GELTaNUgWABAHgSNL84DD4SgFaA3Ca+XpNg1aBuy57E4WPcs9Qm02WBvfKvLZqu+xUVqC4dXbqRnOvAaU1NtTZLYGtFwXeEr9jlDp4hFUip81C4wKgRM3exocDQI3XtE6YBQIkjjFC6HeIUjjU60Ee4WgiUu9FO4NgjYeExORR+u1HWHyMBSVDRb3nd8NWja21tl+OZpSj98On73+AHY3E6jxAOTmAAAAAElFTkSuQmCC", "palm": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACQElEQVR4nO1by3HCMBQUmVRBBTnnxIEiXILLoATKoAQX4QOnnFMBbZCTGEfo897zPj1/tDPMkGD0dlerjzXYuYZ941Cz2OX+eFKvvZ6OVbipFuEILkHLEJVGkcJDoI2ANaYpOgWEGR8IIhbiUXVnOWglPAZpGsQJ4Igfxl5ahgxpZ3xqFZsjehh7151v7O9d7o8nNwnsBEid5hoyjP3rxQGXH8sATuOSHnQOM1w4PMkGICY8iTipkVS+JAOk4qXkUaDwLhqAXupyKdBYLUr8swYgxM9JASpBOR3ifQC6t2rsFWJIGkBd6yXEKd+h9j61fkpP1ICS+LBoyQiNyXBac44JkJuhKSnJtZJNEgoiA7rzLdmrqTRwUsBt238mwdu9gGS3Fyvu/4eIf0kcp0Z4vwAZAjkCpV4riUOKj+HfnZPVdneKXKpi10nhUwA3wENrXUetKN4A0XkABdSe5LaHBnQZjCG3YnDa0MJrCNQ43+OmQftu8no6HtSGQAy1JjgO1IdADLlhUfsMoWoCQnwPv8455366L7PDE5MEhPBGWGARBliiGWBNwBrNAGsC1mgG+De1fpOzFHi9LQHWBKzRDJj+sZd5AH4ouma8GbD1FIT6WgKsCVgjasBWh0FMVzIBWzMhpacNgdyHW0lBTkcxAWs3ocSfNATWagKFN3kOWJsJVL6sSXAtJnB4igQt6TmBEOq/FpcUqQUJL/E+YGkmSPlARFgOibkdAdkJWqUBUbc9N4hsLMRunxxNYYnPDu8ef1tfFkXRENoFAAAAAElFTkSuQmCC", "wave": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB0ElEQVR4nO2bwVHEMAxFA8OdEx1QAZVQBwVRB5VQAR1w2grgpB3WWLYkS5Fk+x13N/L/P3Ji7yTHsVmbuzMHe//6/qH+9u356RRtpoNwDPewCsSkqKbxEu0g1IpZmsbQCONeQ4iHea1xhxL0Ml5D2g3iDohk/jjkekQBRDMPSHSxA4hqHuDqYwUQ3TzA0UkOIIt5gKqXFEA28wBFdzeArOaBnv5mANnNAy0fKivBzKABzHL2AcxPNYDZzAM1X3sKeAvw5l8As7Y/UPp7GC348XlBv3t9eQxXt+RmD009+y1xGBTRVnVrwP8H7GuARCTlOKu6PVgBjA6GHW9VlwI5gFGRWB2rulSuAbTmv5bIsp5VXQrgt9sB2iKj1W0GYCXSGo7uvRL0FuANGkDW9geo+ncHeAvwZvkA0N2g5o4rMst3wDWAs57JiYJ4OzwbOwBvAd7cBLDKdeCvz90B5Qezd0Hpb3eAtwBvqgHMOg1qvtAOmC0EzM+eAq0vZ+mClo9uB2QPoaefNAWyhkDRTb4GZAuBqpd1EcwSAkcn+y4QPQSuPtFtMGoIEl3idUC0EKR6VEx4Plg1eiJUVoJe3aAx7n5vULNYybJvjmJEfHd4eX4B1FPWR1YFaxEAAAAASUVORK5CYII=", "heart": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACBElEQVR4nO2bTXLCMAyFnU7vwYbL9RJd9BJcjk1PQldiQrATS3r6cZ23Yhgcv/dFcgwkpZyaW4vnZI/776P3s8v14uLNdBJO4CNZATE5KDL4VmgQsINZhm4JAeMDYSQiPGpeFcGo4DVJq0FcAZnClyL3IwKQLTxJ4osNIGt4EtcfC0D28CSOz24Ao4Qn9frtAjBaeFKP70MAo4YnHfnfBTB6eNJeDshOcGQ1d0+qs/99q7//8+UzvqHabrEKQBy+ZXyrVhDt+A5tIeBaoNd867Pa8UJhAEgMrcdoxyv01gLs8geeDZEE7bBuA10FRIcHeHgB8F+u+0da55RXQIazT1J4mX4jdAKgF7P0P4nyLts3ZtJyvSxnC0QbiNb0AD5Vo7PsBRTfDnUVoPx+DpHSg74FIiEA5sasARkqQahxF0EQdBwAzyoAzvUEALnzwgMCaA7Ki28BSwgGx7ZZAwZaFO0WQTQEI6gvAOC3oqFMg8PjfhT1kHE7vQFIVQUG4e3+GdpT4kXRrwW4EJygVQGY3ajcG8oofC1XswLCIDiGLyXbVSBgrdgFEN4KIO3lOKwANwjOpU/qagFzCEHhS2HeLT7Snye9J421CHo9x6MVxyf7KpAdAtef6DKYFYLEl3gfkA2C1A8kROTiqD0RkJ1gVDUg5j2fG0QebKtpnxxtKeOzw9PrD5rqyMpw3d5SAAAAAElFTkSuQmCC", "star": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACF0lEQVR4nO1bO3bCMBAUeZwSGgrOQZFzpEgTXzOpzANZsnZXsx9FnhqkmdnRau0HKR2YGyfLzS6X71/qZ5flZsJNdROO4Ba0DFFZFCk8B9oI2GKaomtAmPGBIOIhHrVvl4NewkuQpkGcgEjiU5LzERkQTfwKCS+2AWjxP59fyOXY/FgGRK18Dg5PsgEa4tfqo1OQEp0vyYBRKp+DwrtpgJZ4jaqX0OK/a4Bl5TUN2dMBmQS5sKo+BVUDRj33NdT0FA3wEq+djJIu8yMQKf4pOfWAPVgbtDFAM/4Rqp/rC5cAa7wZEKX6ls1w+gScOR+2PMM9e10fd/JnWQngLOwFLsenAdTzH9kEDrdVL+sI5BtFuNZS6itKVxOMkIZeDt23gKcJiL0h16CHCag9RT2gBKu+gDYbPghppkFjbZVJUIOolrHTj8KHARqLajRCreb6NMDqNzlRsOo9joA3AW9Mb8Dm3Pe+FuM0q9e7nfo9xDzw2u/cEpAL8Xqo2jwLLMvtpPlydE+oxfNEftuZJeD6uJOrbJkGEwMkgjiG9aA6/EiOQR5dlADUuqVhr5qA3skQWT1EGmp6VN4HaEVXY91mlf/DDyX20txMwOgPSS3+pCMwqgkU3uQeMJoJVL6sJjiKCRye7FsguglcfqJrMKoJEl7iOSCaCVI+EBGes0JvISCToFcaEPse/xtELpZj2n+O1hDxv8PT4w+N5/GMHmY0WQAAAABJRU5ErkJggg==", "mountain": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACBUlEQVR4nO2bsXHDMAxF6QwSTxCPkcYuMqqLuPEY2SCTJBV8NC2SAAgQgKRf64T/nwCSZ1kp7dq2DjOLff/8/mGvvZyOU7ypFqEE7kkLiMpNJYOXkgYhdjPN0DVJwHiTMGIRXqruEEGr4EvidgO7AzyFT4nvhwXAW3gQxxcZgNfwIKo/EgDv4UEUn2gAUcKDsH5RAKKFB2F8dwFEDQ/q+W8CiB4e1MohchKMrCqAtTx9UC3PIoC1hQct5dpHYFah88f7rFIkvQDQaH8I7wFCmU+9A8rQHiDkegIwa/GzhpDnVO2AVlBrCCA1AJiAHiCoAKAEs4bw+B1Ncv7v1xvp+s+vs1Rpki6n48HFQYgKTFLiALhhrCCIAhgNYQHBxQjkmg1BDIDlHI/IXQekNBemCAANw7MgDAPQNDoDgssRyKUNYQjArDa9X29qtR4AqK+XLVZ9yZqQ1/0IlJIGzwJgvedLjgQZgHX4XBJengDM+m+epDjdkOckdYCnp1+K6+0FQK0LPIcHYTyW+cLtAj1RRwIFIMLTL4X1XF301viCdGm8qx0QcUdoqZZndWsAVU0Aa+mCVo5uB0SH0POPGoGoEDC+0WtANAhYv6RFMAoEik/yLuAdAtUfaxv0CoHji30O8AaB60ckhOWxefRBiJwErbpBou7+3aDkzUpt9svRmjx+O7x5/QN6qeaWJZaELQAAAABJRU5ErkJggg==", "fire": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACD0lEQVR4nO1by1XDQAxceJRAESkCesiZAjnTAxSRIugBDnnKs9f7kWT91t65kZj1zOxIVpw4pYlz48nyZG+Xyx/22J/bzYSb6kkognvQMkRlUUnhOaSNEFtMU3QNEmY8SxDxEC913l0OegkvgZsGdgIiiU+Jz4dlQDTxAA4vsgFRxQOo/EgGRBcPoPBEGzCKeACWL8qA0cQDMLy7BowqHtDj3zRgdPGAlg6RSXBkVA04yu4DanqKBhxNPKCk68WDyPe1/Pr7lyWLO0wNqAnP37c0YlMCWvHvieceS0Wuz+QqwBGkacISKwM0dn+PEC0TljpVEyAhQDsJcxDSWlhy5zRT8DDgqMNPDaBXZQ5A7djH6/rvz9/umhrzgU8PyMXXXjOAvQEtoQ4miBvQjD9GYOMYjWZolwDK7homYc4B3gS8YWMAJ9JGZTAT4E3AGw8DrH6TEwWgdyZAekHN+3nH+SwQCCsDztIHljpVErCJauejbhHZ/2iV1saAo6cg16fWAyR3TLOx2jVBShlwSoaJogFSZcDqBYq1X9JVTYCLCcbiUzIqAZQJRl0/R3eXJW+XY29pSYtvpRkVc+nvDCx/H9ArZXSdj/jFCaaPoXvAaAMSli+pCY5iAoUn+SoQ3QQqP9ZlMKoJHF7sOSCaCVw+IiI8rxB7N0JkEvRKg8R553ODkovlOO2TozVEfHb49PgHhR3L3Sat24MAAAAASUVORK5CYII=", "camera": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACAElEQVR4nO2bO3YCMQxFlRz2kYZVpaKhySJSZBFp0lCxKpqsJKnEAc/Yo69le/xKPvZ7d2QjDAMwtW+91Jzsdvv9o772eHyr4s11Ek7gLXkBcRnUMngqaxBmg3mGzskCxquFkYjwVvOqCEYFX5O0GsQV0FJ4ALkfEYDWwqMkvtgAWg2P4vpjAWg9PIrjkwygl/Aoql8SgN7Coyi+NwH0Gh615b8IoPfwqFIOk06wZ2UBjHL1Ubk8qwBGC49ayzWXQLSBaC0AjFr+qDTfwWLQ0+lsMYxIl8uP6v1PFSC5+pHhpfM/5lTtAdHhURofT6conArQTPr+9b36+PXzQzwmAG854AmSCIA0fC54Kg0IKgQEcF8C3rs/NTz3tVJh3ip9gCRQDQgAFQBogtSAMDvBaAPRcgVgUcLey2BWQLSBaE0A0Qai5QpA29tbjVHSHUCt/+S0osV3gb3KHYCmhL3LH6BSBUiC1AgPkADw3Ac4gbzDP+ZcBPY+FAGIPxEqAgCoA8FakvAAyj1AeyRtJY0P9SYYDUE7f3bTG/EXorVNPlsBo3WGuTyzEyw9OUoVlHJsVkDvELb8k5ZArxAovsl7QG8QqH5Zm2AvEDg+2Z8CrUPg+hN9DLYKQeJL3Ae0BkHqxyREZNusvRAmnWBUNVjMO+8btBws1W7vHM2pxXuHd69/bJzizwtgHUQAAAAASUVORK5CYII=", "pin": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACLklEQVR4nO1bwZGDMAwUN/dPJ7RxDaWMNJQ26OQq4F7OJA42lrwriwv7TMDWrlayYYzIic/G5DnZuixr67XTPLvERp1EQ3gPLEEogyKJ50ALARuMSboEhBhfiEBGkEfN26XgKOJbsLrB7IBI5EXs8ZgEiEY+wRKXWoCo5BO08akEiE4+QbXhYgxaw+/1Wv3/crshphGRtsbYJEAv+T3SJSDE2BNhtwRGke+9N2Ev/qo6PeQRwT+j1w0lJ0B2gjnQ5FljilQEsGafFWjv2CU+mwIcZbnTYosXtASY2WfNsdkYLA7QBna531/v//nR3W9sinkz/M4vYNs/J57/rhVCi3VZ1mcRKKtACSXy2muQeBGA2fk1xFquRa0Irg6IiFOA0QGMxqMbIrp/rS61za22GqAemad5nqAOqAWmWd48yCe4lkCLCOx9QA5oCSRYlsUW4ujsT/M8ve0EveCd6RIoJYDOFGtMkXMZ5AnAyhgah3AAU0yqAEdwQXgHsEV8CMA6ghLVBYlvaAd4iOciQFQXiAR3gAdeBPA6m9cCpmuGvBSNWgZvAkRwgVf2Rbxfiwd0Qbgm6C3SpgDMMhjpgi1eRQdE6AVIuB6Q2EPJBSPcURXgv7igxmPXAV4PSazsd58SaxkkKlribu4BDBFS1hnZb41X1QSP4gRNnCZCkQ9RaZNkWgajOsESl3kfEE0EazwQEiNLojcRkJ3gKDcg5j2/G0QOluNjvxwtIeK3wx+PP40W7PwY8odRAAAAAElFTkSuQmCC", "suitcase": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABzElEQVR4nO2b0VnDMAyEBWMwBEMwAZMwAg+MwCRMwBAMwRrlSf1SY8fSVYkk2/9b+6Xx3UWOlSYhWszNw5mD/f58X6TbPj2/nKLt0EE0hnscFcghO7U0XmIdhNnOjjTdwiKMRwshHuatxr0rQS/jNdBqgCsgknkiXA8UQDTzDKJLHUBU84xWnyqA6OYZjU5xAFnMM1K9ogCymWckursBZDXP9PTvBpDdPLPnw6QTzEyze7I8+l+f79DvXt8+rCQQUb1brFbAKKVfUvM1/RRYAZRfjFr+TOlvVcD2w+hHn9n6XBXgLcCbm8YAmQJok2MJ0jBxU3StgKzmiTAd7BeeAlHMM6geKIBo5hlElzqAqOYZrb7pV4EVgLcAb1YA3gK8WQF4C/DmGsBZz+RE4d+1wKysALwFeHMTwCznga3PVQHlF6NXQelPXQHW9+us0eqDpkDUEBBd1QAk0yBaCBI94rvDrY2RQc8ANU/UeVJ0pDtFrQB2zwGjrAh7Pronwewh9PSLVoGsIUh0i5fBbCFI9ar6gCwhaHSqG6HoIWj1QZ1g1BAQXfDVYLQQUD0mJjwbpnsPhMn/AV7VYDHuem/Qcmcl07452iLiu8PT8weaAbeFLev4qAAAAABJRU5ErkJggg==", "smile": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB/UlEQVR4nO2bTXLDIAyFSaeXyR267zZH7Tb73iHHSRcdeRzCjyQ/ITB8q3Smwe89ZGFoHcJibi4tL/Z83J7c371cf5poM72IxHANq0BMBkUaj0EHARvM0nQORBgfCCEe5lHXPZSgl/EU2mpQV0BP5kPQ61EF0Jt5QqNLHECv5gmpPlEAvZsnJDrZAYxinuDqZQUwmnmCo7sawKjmiZr+YgCjmydKPiBPgiOTDeAss0/k/CQDOJt5IuVr3QLeArx5C+Cs5U/E/qavgJc9NHL2r9+/2+fH/cttjBx0fmBSAXvhqZ9bjcEBHkBOqMQAYgwu0/eALYCzd/8Y8guvgFyzkjQxxBhcTG6BWKhGOGIMDtsyONstEML/UriaoLcAb1YA3gK8WQF4C/BmBUAfWv1PTi+YbodH4tNiUORBhuWhSAgNzwN6HfslAEQfiGfpiOj4u6gK2Ps0uQViyAjXgGUVxSRnHLEzLJnIBaH5jpS4ys0CCAE3k8jmFwdgugwihFsdhBDZpoc+IJFWg4XxVJMvdn2LU6JaEGZHX5kVrskqsMe6pKUUe8BZ9gclH9UmOHoINf2sVWDUEDi62cvgaCFw9YqeA0YJQaJT/CDUewhSfaonwV5D0OhSPwr3FoJWD8SE598Vj04EZDPkVQ2I6673BpGDxUz75miOHt8dnp4/f5PmBhPKoQwAAAAASUVORK5CYII=", "thumbsup": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB1klEQVR4nO1byZHCMBAcqE2CF4kQwoa7IWwi+yIMeIlyaSVrZjyXrOkX2JTU3WqdxgCJtXGxrOz19/PC/vZy/zbhploJRfAIWoaoFCopvIa0EWKFaYruQcKMqwQRD/FS9R5y0Et4C9w0sBMQSTwAnw/LgGjiCzi8yAZEFV9A5UcyILr4AgpPtAGziC/A8kWNnKrin7//r90eYsWPZodhAszF711nYMR/1wAX8dj7BOzpEFkJkoEVJ2hCD10D1FqfKkrIhJ6epgGzjfhYtHT5dIFASAPqC2eNf0GtLxOw/XL21i/Y6swEeBPwRhpQPqzS/wuK3uUT8KVeQ72Wvz1o63vBs4EW9AyQ2OsriwfQ6gISOzgD8QAaBkwkHsBiDBjBUGwLsgngtL7Bqc8elp8G0wBvAt74GGD1n5woKHozAd4EvJEGbL+sMg5sdWYC6gtnT0GtLxPgTcAbTQPY3YCzszPcDbZ0dRNwtrGgp0e+C1Ba1PksAGBggGpXcI7+5x6mgEPPDFqnwoYYNSK6hWd8cIJJMHoMmG1QxPIlDYKzmEDhSZ4FoptA5ceaBqOawOHFXgdEM4HLR0SE5wxxtCFEVoJeaZCoN98blCysxrJvjvYQ8d3h5fEGZIe6R3un8QUAAAAASUVORK5CYII="}, "labels": {"sun": "Sol", "moon": "Luna", "palm": "Palmera", "wave": "Ola", "heart": "Coraz\u00f3n", "star": "Estrella", "mountain": "Monta\u00f1a", "fire": "Fuego", "camera": "C\u00e1mara", "pin": "Ubicaci\u00f3n", "suitcase": "Valija", "smile": "Sonrisa", "thumbsup": "Like"}};
+
+</script>
+<script>
 // ============================================================
 // Caramelo Tours — Pestaña Video (timeline maestro, logo/slogan,
 // filtro en vivo, 2 pistas de texto, formato)
@@ -2325,6 +2386,20 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   let totalDuration = 0;
   let playheadTime = 0;
 
+  // audio state
+  let audioMode = 'original'; // original | music | both | mute
+  let musicFile = null;
+  let fadeIn = 0.5, fadeOut = 0.5;
+
+  // emoji state: {id, key, start, end, xf, yf, scale}
+  let emojis = [];
+  let emojiIdCounter = 0;
+
+  // play (preview) state
+  let playing = false;
+  let playRafId = null;
+  let playLastTs = 0;
+
   // ---------- DOM ----------
   const videoInput = document.getElementById('vidFileInput');
   const videoA = document.getElementById('vidPreview');
@@ -2358,6 +2433,19 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   const vidLogoImg = document.getElementById('vidLogoImg');
   const vidSlogan = document.getElementById('vidSlogan');
   const vidBrandToggle = document.getElementById('vidBrandToggle');
+  const playBtn = document.getElementById('vidPlayBtn');
+  const trackAudio = document.getElementById('vidTrackAudio');
+  const trackEmoji = document.getElementById('vidTrackEmoji');
+  const emojisOverlay = document.getElementById('vidEmojisOverlay');
+  const emojiCard = document.getElementById('vidEmojiCard');
+  const emojiGrid = document.getElementById('vidEmojiGrid');
+  const emojiList = document.getElementById('vidEmojiList');
+  const audioModesWrap = document.getElementById('vidAudioModes');
+  const musicUploadWrap = document.getElementById('vidMusicUploadWrap');
+  const musicInput = document.getElementById('vidMusicInput');
+  const musicDropLabel = document.getElementById('vidMusicDropLabel');
+  const fadeInLabel = document.getElementById('vidFadeInLabel');
+  const fadeOutLabel = document.getElementById('vidFadeOutLabel');
 
   vidLogoImg.src = "data:image/png;base64," + LOGO_B64;
 
@@ -2463,6 +2551,158 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
   attachDrag(vidLogo, logoState, renderBrand);
   attachDrag(vidSlogan, sloganState, renderBrand);
 
+  // ================= AUDIO =================
+  audioModesWrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      audioModesWrap.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      audioMode = btn.dataset.mode;
+      musicUploadWrap.style.display = (audioMode === 'music' || audioMode === 'both') ? 'block' : 'none';
+      renderAudioTrack();
+    });
+  });
+  musicInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    musicFile = file;
+    musicDropLabel.textContent = "Música cargada ✓ (" + file.name + ")";
+    renderAudioTrack();
+  });
+
+  const fadeInMinus = document.getElementById('vidFadeInMinus');
+  const fadeInPlus = document.getElementById('vidFadeInPlus');
+  const fadeOutMinus = document.getElementById('vidFadeOutMinus');
+  const fadeOutPlus = document.getElementById('vidFadeOutPlus');
+  fadeInMinus.addEventListener('click', () => { fadeIn = Math.max(0, fadeIn - 0.5); fadeInLabel.textContent = fadeIn.toFixed(1) + 's'; });
+  fadeInPlus.addEventListener('click', () => { fadeIn = Math.min(5, fadeIn + 0.5); fadeInLabel.textContent = fadeIn.toFixed(1) + 's'; });
+  fadeOutMinus.addEventListener('click', () => { fadeOut = Math.max(0, fadeOut - 0.5); fadeOutLabel.textContent = fadeOut.toFixed(1) + 's'; });
+  fadeOutPlus.addEventListener('click', () => { fadeOut = Math.min(5, fadeOut + 0.5); fadeOutLabel.textContent = fadeOut.toFixed(1) + 's'; });
+
+  function renderAudioTrack() {
+    trackAudio.innerHTML = '';
+    if (!totalDuration) return;
+    const block = document.createElement('div');
+    block.className = 'v-emoji-block';
+    block.style.left = '0%';
+    block.style.width = '100%';
+    block.style.background = 'rgba(60,200,120,0.35)';
+    block.style.borderColor = '#3cc878';
+    const label = audioMode === 'original' ? '🎵 Audio original'
+      : audioMode === 'music' ? '🎶 ' + (musicFile ? musicFile.name : 'Música (subí un archivo)')
+      : audioMode === 'both' ? '🎧 Original + música'
+      : '🔇 Silencio';
+    block.innerHTML = `<span style="font-size:10px; color:white; padding:0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</span>`;
+    trackAudio.appendChild(block);
+  }
+
+  // ================= EMOJIS =================
+  function renderEmojiGrid() {
+    emojiGrid.innerHTML = '';
+    if (typeof EMOJI_STICKERS === 'undefined') return;
+    Object.entries(EMOJI_STICKERS.thumbs).forEach(([key, b64]) => {
+      const el = document.createElement('div');
+      el.className = 'filter-swatch';
+      el.innerHTML = `<img class="thumb" src="data:image/png;base64,${b64}" alt=""><div class="fname">${EMOJI_STICKERS.labels[key] || key}</div>`;
+      el.addEventListener('click', () => addEmoji(key));
+      emojiGrid.appendChild(el);
+    });
+  }
+  renderEmojiGrid();
+
+  function addEmoji(key) {
+    if (emojis.length >= 6) { alert('Máximo 6 emojis.'); return; }
+    const em = {
+      id: emojiIdCounter++, key,
+      start: 0, end: Math.min(3, totalDuration || 3),
+      xf: 0.5 + (emojis.length % 3 - 1) * 0.15, yf: 0.35, scale: 1,
+    };
+    emojis.push(em);
+    renderEmojiList();
+    renderMasterTimeline();
+    updateMasterPreview();
+  }
+
+  function removeEmoji(id) {
+    emojis = emojis.filter(e => e.id !== id);
+    renderEmojiList();
+    renderMasterTimeline();
+    updateMasterPreview();
+  }
+
+  function renderEmojiList() {
+    emojiList.innerHTML = '';
+    emojis.forEach((em, idx) => {
+      const item = document.createElement('div');
+      item.className = 'v-text-item';
+      item.style.marginTop = '10px';
+      const thumb = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
+      item.innerHTML = `
+        <div class="v-text-head">
+          <span class="v-text-title">${thumb ? `<img src="data:image/png;base64,${thumb}" style="width:18px;vertical-align:middle;margin-right:6px;">` : ''}Emoji ${idx + 1}</span>
+          <div class="del">✕</div>
+        </div>
+        <div class="el-controls">
+          <div class="sizebtn e-minus">−</div>
+          <span style="font-size:13px; opacity:0.8;">Tamaño</span>
+          <div class="sizebtn e-plus">+</div>
+        </div>
+        <div class="hint">Tiempo: ${em.start.toFixed(1)}s → ${em.end.toFixed(1)}s — arrastrá el bloque en la pista 😀 de arriba.</div>
+      `;
+      emojiList.appendChild(item);
+      item.querySelector('.del').addEventListener('click', () => removeEmoji(em.id));
+      item.querySelector('.e-minus').addEventListener('click', () => { em.scale = Math.max(0.4, em.scale - 0.15); updateMasterPreview(); });
+      item.querySelector('.e-plus').addEventListener('click', () => { em.scale = Math.min(3, em.scale + 0.15); updateMasterPreview(); });
+    });
+    emojiCard.style.display = 'block';
+  }
+
+  function attachEmojiBlockDrag(el, em) {
+    let dragging = false, startX = 0, origStart = 0, origEnd = 0;
+    el.addEventListener('pointerdown', (e) => {
+      dragging = true; startX = e.clientX; origStart = em.start; origEnd = em.end;
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      e.stopPropagation();
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging || !totalDuration) return;
+      const rect = trackEmoji.getBoundingClientRect();
+      const dt = (e.clientX - startX) / rect.width * totalDuration;
+      const dur = origEnd - origStart;
+      let newStart = Math.max(0, Math.min(origStart + dt, totalDuration - dur));
+      em.start = newStart; em.end = newStart + dur;
+      renderMasterTimeline();
+      e.stopPropagation();
+    });
+    function end() { dragging = false; }
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  }
+
+  // ================= PLAY (preview through the whole timeline) =================
+  playBtn.addEventListener('click', () => {
+    if (playing) { stopPlayback(); return; }
+    if (!totalDuration) return;
+    playing = true;
+    playBtn.textContent = '⏸';
+    playLastTs = performance.now();
+    playRafId = requestAnimationFrame(playTick);
+  });
+  function stopPlayback() {
+    playing = false;
+    playBtn.textContent = '▶';
+    if (playRafId) cancelAnimationFrame(playRafId);
+  }
+  function playTick(ts) {
+    if (!playing) return;
+    const dt = (ts - playLastTs) / 1000;
+    playLastTs = ts;
+    playheadTime += dt;
+    if (playheadTime >= totalDuration) { playheadTime = 0; stopPlayback(); layoutPlayhead(); updateMasterPreview(); return; }
+    layoutPlayhead();
+    updateMasterPreview();
+    playRafId = requestAnimationFrame(playTick);
+  }
+
   // ================= CLIP MASTER LAYOUT =================
   function computeClipLayout() {
     const layout = [];
@@ -2528,6 +2768,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
 
     masterCard.style.display = 'block';
     textsCard.style.display = 'block';
+    emojiCard.style.display = 'block';
     transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
     if (texts.length === 0) addText();
     renderTextsList();
@@ -2581,6 +2822,19 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       (idx % 2 === 0 ? trackTexts : trackTexts2).appendChild(block);
     });
 
+    trackEmoji.innerHTML = '';
+    emojis.forEach((em) => {
+      const block = document.createElement('div');
+      block.className = 'v-emoji-block';
+      block.style.left = (em.start / totalDuration * 100) + '%';
+      block.style.width = Math.max(2, (em.end - em.start) / totalDuration * 100) + '%';
+      const thumb = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
+      if (thumb) block.innerHTML = `<img src="data:image/png;base64,${thumb}">`;
+      attachEmojiBlockDrag(block, em);
+      trackEmoji.appendChild(block);
+    });
+
+    renderAudioTrack();
     masterTotalLabel.textContent = fmtTime(totalDuration);
     layoutPlayhead();
   }
@@ -2798,6 +3052,19 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       attachTextDrag(el, tx);
       textsOverlay.appendChild(el);
     });
+
+    emojisOverlay.innerHTML = '';
+    emojis.filter(em => t >= em.start && t <= em.end).forEach((em) => {
+      const el = document.createElement('div');
+      el.className = 'v-stage-emoji';
+      const thumb = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
+      if (thumb) el.innerHTML = `<img src="data:image/png;base64,${thumb}" style="width:100%;">`;
+      el.style.left = (em.xf * 100) + '%';
+      el.style.top = (em.yf * 100) + '%';
+      el.style.width = (52 * em.scale) + 'px';
+      attachTextDrag(el, em);
+      emojisOverlay.appendChild(el);
+    });
   }
 
   function attachTextDrag(el, textObj) {
@@ -2997,15 +3264,38 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         args.push('-i', 'logo.png');
       }
 
+      // emoji sticker inputs
+      const activeEmojis = emojis.slice();
+      const emojiInputIdx = {};
+      let nextInputIdx = logoInputIdx + (brandVisible ? 1 : 0);
+      for (const em of activeEmojis) {
+        const b64 = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
+        if (!b64) continue;
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const fname = `emoji_${em.id}.png`;
+        await ffmpeg.writeFile(fname, bytes);
+        args.push('-i', fname);
+        emojiInputIdx[em.id] = nextInputIdx++;
+      }
+
+      // music input (looped so it always covers the whole final duration)
+      let musicInputIdx = null;
+      if ((audioMode === 'music' || audioMode === 'both') && musicFile) {
+        const musicBytes = new Uint8Array(await musicFile.arrayBuffer());
+        await ffmpeg.writeFile('music.mp3', musicBytes);
+        args.push('-stream_loop', '-1', '-i', 'music.mp3');
+        musicInputIdx = nextInputIdx++;
+      }
+
       let filterComplex = '';
-      let vOut, aOut;
+      let vOut, aOutRaw;
 
       if (clips.length === 1) {
-        vOut = '0:v'; aOut = '0:a';
+        vOut = '0:v'; aOutRaw = '0:a';
       } else if (selectedTransition === 'none') {
         const inputsRefs = clips.map((_, i) => `[${i}:v][${i}:a]`).join('');
         filterComplex += `${inputsRefs}concat=n=${clips.length}:v=1:a=1[vcat][acat];`;
-        vOut = 'vcat'; aOut = 'acat';
+        vOut = 'vcat'; aOutRaw = 'acat';
       } else {
         let cum = clipDuration(clips[0]);
         let vLabel = '0:v', aLabel = '0:a';
@@ -3018,8 +3308,11 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
           vLabel = vOutLabel; aLabel = aOutLabel;
           cum = cum + d - TRANSITION_DURATION;
         }
-        vOut = vLabel; aOut = aLabel;
+        vOut = vLabel; aOutRaw = aLabel;
       }
+      // normalize audio to a real filter-graph label always (fixes the
+      // "raw input ref vs filter label" bracket mismatch permanently)
+      filterComplex += `[${aOutRaw}]anull[aorig];`;
 
       // color filter
       const filterDef = FILTERS[selectedFilter];
@@ -3029,10 +3322,14 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         curLabel = 'vfilt';
       }
 
-      // crop to selected aspect ratio (centered)
+      // crop to selected aspect ratio (centered), then force final output to 1080px
       const targetRatio = ASPECTS[selectedAspect] || 9/16;
       filterComplex += `[${curLabel}]crop='min(iw,ih*${targetRatio})':'min(ih,iw/${targetRatio})':(iw-ow)/2:(ih-oh)/2[vcrop];`;
       curLabel = 'vcrop';
+      const outW = targetRatio <= 1 ? 1080 : Math.round(1080 * targetRatio);
+      const outH = targetRatio <= 1 ? Math.round(1080 / targetRatio) : 1080;
+      filterComplex += `[${curLabel}]scale=${outW}:${outH}[vscaled];`;
+      curLabel = 'vscaled';
 
       // logo + slogan overlay (burned in for the whole duration)
       if (brandVisible) {
@@ -3041,14 +3338,14 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         curLabel = 'vlogo';
 
         const alexBrushName = await ensureAlexBrushInFFmpegFS();
-        const sloganSize = Math.round((clips[0].videoH || 1920) * 0.022 * sloganState.scale);
+        const sloganSize = Math.round(outH * 0.022 * sloganState.scale);
         filterComplex += `[${curLabel}]drawtext=fontfile=${alexBrushName}:text='¡La dulce manera de viajar\u2019':fontcolor=white:fontsize=${sloganSize}:borderw=2:bordercolor=black:x=(main_w*${sloganState.xf}-text_w/2):y=(main_h*${sloganState.yf}-text_h/2)[vslogan];`;
         curLabel = 'vslogan';
       }
 
       // texts
       const activeTexts = texts.filter(t => t.content.trim());
-      const baseFontSize = Math.round((clips[0].videoH || 1920) * 0.045);
+      const baseFontSize = Math.round(outH * 0.045);
       for (let i = 0; i < activeTexts.length; i++) {
         const t = activeTexts[i];
         const fontVirtualName = await ensureFontInFFmpegFS(t.fontFamily, t.fontFile);
@@ -3059,15 +3356,50 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
         curLabel = outLabel;
       }
 
+      // emojis
+      for (let i = 0; i < activeEmojis.length; i++) {
+        const em = activeEmojis[i];
+        const idx = emojiInputIdx[em.id];
+        if (idx === undefined) continue;
+        const scaledLabel = `emsc${i}`;
+        const outLabel = `em${i}`;
+        const emSize = Math.round(outH * 0.05 * em.scale);
+        filterComplex += `[${idx}:v]scale=${emSize}:${emSize}[${scaledLabel}];`;
+        filterComplex += `[${curLabel}][${scaledLabel}]overlay=x=(main_w*${em.xf}-overlay_w/2):y=(main_h*${em.yf}-overlay_h/2):enable='between(t,${em.start},${em.end})'[${outLabel}];`;
+        curLabel = outLabel;
+      }
+
+      // audio: build final audio label based on the selected mode
+      let finalAudioLabel = null; // null => no audio (-an)
+      if (audioMode === 'mute') {
+        finalAudioLabel = null;
+      } else if (audioMode === 'music' && musicInputIdx !== null) {
+        filterComplex += `[${musicInputIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
+        finalAudioLabel = 'amusic';
+      } else if (audioMode === 'both' && musicInputIdx !== null) {
+        filterComplex += `[${musicInputIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
+        filterComplex += `[aorig][amusic]amix=inputs=2:duration=first:dropout_transition=0[amixed];`;
+        finalAudioLabel = 'amixed';
+      } else {
+        finalAudioLabel = 'aorig'; // original (or music/both requested but no file uploaded — falls back to original)
+      }
+      if (finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
+        const fadeOutStart = Math.max(0, totalDuration - fadeOut);
+        filterComplex += `[${finalAudioLabel}]afade=t=in:st=0:d=${fadeIn},afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOut}[afaded];`;
+        finalAudioLabel = 'afaded';
+      }
+
       if (filterComplex.endsWith(';')) filterComplex = filterComplex.slice(0, -1);
 
       args.push('-filter_complex', filterComplex);
       args.push('-map', `[${curLabel}]`);
-      // aOut is a real filter_complex label (needs brackets) only when there's
-      // more than one clip (concat/xfade produces a labeled audio output);
-      // with a single clip it's still the raw input stream reference "0:a".
-      args.push('-map', clips.length > 1 ? `[${aOut}]` : aOut);
-      args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
+      if (finalAudioLabel) {
+        args.push('-map', `[${finalAudioLabel}]`);
+        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
+      } else {
+        args.push('-an');
+        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20');
+      }
       args.push('out.mp4');
 
       progressText.textContent = 'Procesando...';
@@ -3083,6 +3415,10 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
       progressFill.style.width = '100%';
       progressText.textContent = '¡Listo!';
       resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // guardar/compartir enseguida — mismo camino simple que Cronograma/Anuncios,
+      // sin depender de que la persona toque un botón aparte
+      shareOrDownloadVideo(blob);
     } catch (err) {
       console.error(err);
       showFatalError('al procesar el video: ' + (err && (err.message || err.toString())));
@@ -3092,9 +3428,7 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     }
   });
 
-  downloadBtn.addEventListener('click', () => {
-    const blob = window.__lastVideoBlob;
-    if (!blob) return;
+  function shareOrDownloadVideo(blob) {
     const filename = 'caramelo_video.mp4';
     const file = new File([blob], filename, { type: 'video/mp4' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -3102,6 +3436,12 @@ const FILTER_THUMBS = {"none": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAAAiOjnJAAAA
     } else {
       anchorDownloadBlob(blob, filename);
     }
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    const blob = window.__lastVideoBlob;
+    if (!blob) return;
+    shareOrDownloadVideo(blob);
   });
 
   function anchorDownloadBlob(blob, filename) {
