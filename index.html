@@ -1060,10 +1060,30 @@ function showFatalError(msg) {
   if (!box) {
     box = document.createElement('div');
     box.id = 'fatalErrorBox';
-    box.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:12px 16px;font-family:sans-serif;font-size:13px;z-index:9999;white-space:pre-wrap;';
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;max-height:70vh;overflow-y:auto;background:#c0392b;color:#fff;padding:12px 16px 50px;font-family:sans-serif;font-size:13px;z-index:9999;white-space:pre-wrap;';
     document.body.prepend(box);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = '📋 Copiar error';
+    copyBtn.style.cssText = 'position:fixed;bottom:10px;left:16px;right:16px;z-index:10000;padding:10px;border-radius:8px;border:none;background:#fff;color:#c0392b;font-weight:700;font-size:14px;';
+    copyBtn.addEventListener('click', () => {
+      const text = box.dataset.rawText || box.textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => { copyBtn.textContent = '✓ Copiado — pegalo en el chat'; });
+      } else {
+        // fallback for browsers without clipboard API
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        copyBtn.textContent = '✓ Copiado — pegalo en el chat';
+      }
+    });
+    document.body.appendChild(copyBtn);
+    box._copyBtn = copyBtn;
   }
-  box.textContent = "Error en la app: " + msg;
+  const fullText = "Error en la app: " + msg;
+  box.textContent = fullText;
+  box.dataset.rawText = fullText;
 }
 window.addEventListener('error', (e) => {
   showFatalError(e.message + " (línea " + e.lineno + ")");
@@ -2955,8 +2975,32 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     const layout = computeClipLayout();
     totalDuration = layout[layout.length - 1].end;
     if (playheadTime > totalDuration) playheadTime = totalDuration;
+    clampTimedItemsToDuration();
     renderMasterTimeline();
     updateMasterPreview();
+  }
+
+  // keep every text/emoji's start/end inside [0, totalDuration] at all times —
+  // if the video gets shorter (trimming a clip, removing one, changing a
+  // transition) a text or emoji could otherwise be left pointing past the
+  // real end of the video, which is exactly the kind of mismatch that can
+  // make the export unstable
+  function clampTimedItemsToDuration() {
+    if (!totalDuration) return;
+    let changed = false;
+    [...texts, ...emojis].forEach(item => {
+      const dur = item.end - item.start;
+      if (item.end > totalDuration) {
+        item.end = totalDuration;
+        item.start = Math.max(0, item.end - dur);
+        changed = true;
+      }
+      if (item.start < 0) { item.start = 0; changed = true; }
+    });
+    if (changed) {
+      if (typeof renderTextsList === 'function' && textsContainer.children.length) renderTextsList();
+      if (typeof renderEmojiList === 'function' && emojiList.children.length) renderEmojiList();
+    }
   }
 
   // ================= EXTRACT METADATA =================
@@ -3603,7 +3647,11 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       }
 
       // emoji sticker inputs
-      const activeEmojis = emojis.slice();
+      const activeEmojis = emojis.map(em => ({
+        ...em,
+        start: Math.max(0, Math.min(em.start, totalDuration - 0.1)),
+        end: Math.max(0.1, Math.min(em.end, totalDuration)),
+      }));
       const emojiInputIdx = {};
       let nextInputIdx = logoInputIdx + (brandVisible ? 1 : 0);
       for (const em of activeEmojis) {
@@ -3692,8 +3740,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         curLabel = 'vslogan';
       }
 
-      // texts
-      const activeTexts = texts.filter(t => t.content.trim());
+      // texts — clamp start/end to the real final duration one last time as a
+      // safety net, in case something was added right before Generate
+      const activeTexts = texts.filter(t => t.content.trim()).map(t => ({
+        ...t,
+        start: Math.max(0, Math.min(t.start, totalDuration - 0.1)),
+        end: Math.max(0.1, Math.min(t.end, totalDuration)),
+      }));
       const baseFontSize = Math.round(outH * 0.045);
       for (let i = 0; i < activeTexts.length; i++) {
         const t = activeTexts[i];
@@ -3740,7 +3793,14 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
       if (filterComplex.endsWith(';')) filterComplex = filterComplex.slice(0, -1);
 
-      args.push('-filter_complex', filterComplex);
+      // pass the filter graph as a FILE instead of a raw command-line argument.
+      // With many clips + texts + emojis this string gets very long (several
+      // KB), and long combos were exactly where "matches no streams" kept
+      // appearing — the engine's own recommended fix for long filter graphs
+      // is -filter_complex_script instead of -filter_complex, which avoids
+      // whatever internal limit was truncating/corrupting the tail of it.
+      await ffmpeg.writeFile('filter.txt', new TextEncoder().encode(filterComplex));
+      args.push('-filter_complex_script', 'filter.txt');
       args.push('-map', `[${curLabel}]`);
       if (finalAudioLabel) {
         args.push('-map', `[${finalAudioLabel}]`);
