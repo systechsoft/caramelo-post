@@ -2813,12 +2813,34 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
           <span style="font-size:13px; opacity:0.8;">Tamaño</span>
           <div class="sizebtn e-plus">+</div>
         </div>
-        <div class="hint">Tiempo: ${em.start.toFixed(1)}s → ${em.end.toFixed(1)}s — arrastrá el bloque en la pista 😀 de arriba.</div>
+        <label>¿Cuándo aparece y desaparece? (en segundos)</label>
+        <div class="v-time-inputs">
+          <input type="number" class="v-emoji-start-input" min="0" step="0.1" value="${em.start.toFixed(1)}">
+          <span>→</span>
+          <input type="number" class="v-emoji-end-input" min="0" step="0.1" value="${em.end.toFixed(1)}">
+        </div>
+        <div class="hint">También podés arrastrar el bloque en la pista 😀 de arriba.</div>
       `;
       emojiList.appendChild(item);
       item.querySelector('.del').addEventListener('click', () => removeEmoji(em.id));
       item.querySelector('.e-minus').addEventListener('click', () => { em.scale = Math.max(0.4, em.scale - 0.15); updateMasterPreview(); });
       item.querySelector('.e-plus').addEventListener('click', () => { em.scale = Math.min(3, em.scale + 0.15); updateMasterPreview(); });
+
+      const startInput = item.querySelector('.v-emoji-start-input');
+      const endInput = item.querySelector('.v-emoji-end-input');
+      startInput.addEventListener('change', () => {
+        const v = Math.max(0, Math.min(parseFloat(startInput.value) || 0, em.end - 0.1));
+        em.start = v; startInput.value = v.toFixed(1);
+        renderMasterTimeline();
+        updateMasterPreview();
+      });
+      endInput.addEventListener('change', () => {
+        const max = totalDuration || 999;
+        const v = Math.max(em.start + 0.1, Math.min(parseFloat(endInput.value) || 0, max));
+        em.end = v; endInput.value = v.toFixed(1);
+        renderMasterTimeline();
+        updateMasterPreview();
+      });
     });
   }
 
@@ -2840,7 +2862,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       el.style.left = (newStart / totalDuration * 100) + '%';
       e.stopPropagation();
     });
-    function end() { dragging = false; renderMasterTimeline(); }
+    function end() { dragging = false; renderMasterTimeline(); renderEmojiList(); }
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
   }
@@ -3544,6 +3566,19 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
     if (sumTrimmed > MAX_TOTAL_SECONDS + 5) { alert('El total supera los 3 minutos permitidos. Recortá algún clip.'); return; }
 
+    // heavy-combo warning — many clips + texts + emojis all together at 1080p
+    // can run out of memory on some phones and fail with "FS error"; better
+    // to warn up front than let it crash silently mid-process
+    const complexity = clips.length + texts.filter(t => t.content.trim()).length + emojis.length;
+    if (complexity > 10) {
+      const proceed = confirm(
+        `Estás combinando ${clips.length} clips, ${texts.length} textos y ${emojis.length} emojis a la vez. ` +
+        `En algunos celulares esto puede quedarse sin memoria y fallar. ` +
+        `¿Querés intentarlo igual? (Si falla, probá con menos clips/textos/emojis)`
+      );
+      if (!proceed) return;
+    }
+
     loadingMsg.style.display = 'block';
     progressFill.style.width = '0%';
     progressText.textContent = 'Preparando...';
@@ -3709,10 +3744,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       args.push('-map', `[${curLabel}]`);
       if (finalAudioLabel) {
         args.push('-map', `[${finalAudioLabel}]`);
-        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-c:a', 'aac');
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', '-c:a', 'aac');
       } else {
         args.push('-an');
-        args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20');
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20');
       }
       args.push('out.mp4');
 
