@@ -3707,9 +3707,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         }
         vOut = vLabel; aOutRaw = aLabel;
       }
-      // normalize audio to a real filter-graph label always (fixes the
-      // "raw input ref vs filter label" bracket mismatch permanently)
-      filterComplex += `[${aOutRaw}]anull[aorig];`;
+      // NOTE: previously this normalized through an extra `[${aOutRaw}]anull[aorig];`
+      // hop before anything else could use it. Removed that indirection —
+      // every later step now references aOutRaw directly. One less link in
+      // the chain, one less thing that could go wrong.
 
       // color filter
       const filterDef = FILTERS[selectedFilter];
@@ -3780,10 +3781,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         finalAudioLabel = 'amusic';
       } else if (audioMode === 'both' && musicInputIdx !== null) {
         filterComplex += `[${musicInputIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
-        filterComplex += `[aorig][amusic]amix=inputs=2:duration=first:dropout_transition=0[amixed];`;
+        filterComplex += `[${aOutRaw}][amusic]amix=inputs=2:duration=first:dropout_transition=0[amixed];`;
         finalAudioLabel = 'amixed';
       } else {
-        finalAudioLabel = 'aorig'; // original (or music/both requested but no file uploaded — falls back to original)
+        finalAudioLabel = aOutRaw; // original (or music/both requested but no file uploaded — falls back to original)
       }
       if (finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
         const fadeOutStart = Math.max(0, totalDuration - fadeOut);
@@ -3803,7 +3804,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       args.push('-filter_complex_script', 'filter.txt');
       args.push('-map', `[${curLabel}]`);
       if (finalAudioLabel) {
-        args.push('-map', `[${finalAudioLabel}]`);
+        // finalAudioLabel is either a raw input stream specifier like "0:a"
+        // (single clip, original audio, no fade applied — never entered the
+        // filter graph at all) or a real filter-graph label like "afaded" /
+        // "amixed" / "a6" (multi-clip or fade was applied). -map needs
+        // brackets ONLY for the latter.
+        const isRawSpecifier = /^\d+:a$/.test(finalAudioLabel);
+        args.push('-map', isRawSpecifier ? finalAudioLabel : `[${finalAudioLabel}]`);
         args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', '-c:a', 'aac');
       } else {
         args.push('-an');
