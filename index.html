@@ -3473,6 +3473,14 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       engineStatus.style.display = 'block';
       const { FFmpeg } = FFmpegWASM;
       ffmpeg = new FFmpeg();
+      // keep a rolling buffer of the engine's own internal log lines — if
+      // generation fails, we show the tail of this alongside the error so
+      // the real cause is visible instead of a generic "something failed"
+      ffmpeg.on('log', ({ message }) => {
+        window.__ffmpegLogTail = window.__ffmpegLogTail || [];
+        window.__ffmpegLogTail.push(message);
+        if (window.__ffmpegLogTail.length > 25) window.__ffmpegLogTail.shift();
+      });
       ffmpeg.on('progress', ({ progress }) => {
         const pct = Math.min(100, Math.round(progress * 100));
         progressFill.style.width = pct + '%';
@@ -3736,7 +3744,9 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       shareOrDownloadVideo(blob);
     } catch (err) {
       console.error(err);
-      showFatalError('al procesar el video: ' + (err && (err.message || err.toString())));
+      const tail = (window.__ffmpegLogTail || []).slice(-8).join(' | ');
+      const detail = err && (err.message || err.toString());
+      showFatalError('al procesar el video: ' + detail + (tail ? '\n\nÚltimas líneas del motor:\n' + tail : ''));
     } finally {
       loadingMsg.style.display = 'none';
       generateBtn.disabled = false;
