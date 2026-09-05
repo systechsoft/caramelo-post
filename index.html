@@ -848,8 +848,8 @@ TODO INCLUIDO</textarea>
 
   <div class="card" id="vidEngineStatus" style="display:none;"></div>
 
-  <video id="vidPreview" style="display:none;"></video>
-  <video id="vidPreviewB" style="display:none;"></video>
+  <video id="vidPreview" playsinline webkit-playsinline muted style="display:none;"></video>
+  <video id="vidPreviewB" playsinline webkit-playsinline muted style="display:none;"></video>
 
   <div class="card" id="vidMasterCard">
     <div class="v-stage-wrap">
@@ -3174,9 +3174,16 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
   // ================= PLAYHEAD =================
   function layoutPlayhead() {
-    if (!totalDuration) { playheadEl.style.left = '0%'; return; }
-    const pct = Math.max(0, Math.min(100, playheadTime / totalDuration * 100));
-    playheadEl.style.left = pct + '%';
+    if (!totalDuration) { playheadEl.style.left = '0px'; return; }
+    const pct = Math.max(0, Math.min(1, playheadTime / totalDuration));
+    // position relative to the ACTUAL video track width (excluding the "+"
+    // add-clip icon, which sits outside the track as a sibling) so the
+    // playhead line always starts/ends exactly at the track's own edges
+    const containerRect = masterTimeline.getBoundingClientRect();
+    const trackRect = trackVideo.getBoundingClientRect();
+    const offsetPx = trackRect.left - containerRect.left;
+    const px = offsetPx + pct * trackRect.width;
+    playheadEl.style.left = px + 'px';
     masterTimeLabel.textContent = fmtTime(playheadTime);
   }
 
@@ -3184,7 +3191,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   function seekFromEvent(e) {
     if (!totalDuration) return;
     if (playing) stopPlayback();
-    const rect = masterTimeline.getBoundingClientRect();
+    // use the SAME reference (the video track's own width) as layoutPlayhead(),
+    // so where you touch always matches exactly where the line appears —
+    // dragging can never creep past the track's own edges into the "+" icon
+    const rect = trackVideo.getBoundingClientRect();
     const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     playheadTime = Math.max(0, Math.min(totalDuration, frac * totalDuration));
     layoutPlayhead();
