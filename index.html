@@ -2459,7 +2459,8 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     slideup: "Deslizar ↑", slidedown: "Deslizar ↓", circleopen: "Círculo",
     wipeleft: "Cortina", dissolve: "Difuminado", none: "Corte seco",
   };
-  let selectedTransition = "fade";
+  let junctionTransitions = []; // one entry per junction (between clip i-1 and clip i)
+  let activeJunctionIdx = null; // which junction's pill was tapped, for the sheet panel
 
   const FILTERS = {
     none:    { label: "Ninguno",   vf: null,  css: "none" },
@@ -2561,6 +2562,12 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   }
   function clipDuration(c) { return c.trimEnd - c.trimStart; }
 
+  function syncJunctionTransitions() {
+    const needed = Math.max(0, clips.length - 1);
+    while (junctionTransitions.length < needed) junctionTransitions.push('fade');
+    junctionTransitions.length = needed;
+  }
+
   // ================= BOTTOM SHEET (floats over the lower screen; video/tracks never move) =================
   const sheetBackdrop = document.getElementById('vidSheetBackdrop');
   const bottomSheet = document.getElementById('vidBottomSheet');
@@ -2641,15 +2648,17 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     stageCanvas.style.filter = FILTERS[selectedFilter].css;
   }
 
-  // ================= TRANSITION CHIPS =================
+  // ================= TRANSITION CHIPS (scoped to the tapped junction) =================
   function renderTransitionGrid() {
     transitionGrid.innerHTML = '';
+    const current = (activeJunctionIdx !== null) ? junctionTransitions[activeJunctionIdx] : 'fade';
     Object.entries(TRANSITIONS).forEach(([key, label]) => {
       const el = document.createElement('div');
-      el.className = 'chip' + (key === selectedTransition ? ' active' : '');
+      el.className = 'chip' + (key === current ? ' active' : '');
       el.textContent = label;
       el.addEventListener('click', () => {
-        selectedTransition = key;
+        if (activeJunctionIdx === null) return;
+        junctionTransitions[activeJunctionIdx] = key;
         renderTransitionGrid();
         recomputeLayout();
       });
@@ -2896,11 +2905,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
   // ================= CLIP MASTER LAYOUT =================
   function computeClipLayout() {
+    syncJunctionTransitions();
     const layout = [];
     let cum = 0;
     clips.forEach((c, i) => {
       const d = clipDuration(c);
-      const start = i === 0 ? 0 : cum - (selectedTransition === 'none' ? 0 : TRANSITION_DURATION);
+      const junctionType = i === 0 ? null : junctionTransitions[i - 1];
+      const start = i === 0 ? 0 : cum - (junctionType === 'none' ? 0 : TRANSITION_DURATION);
       const end = start + d;
       layout.push({ clip: c, start, end });
       cum = end;
@@ -2995,14 +3006,21 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
       // transition pill — always shown between clips (even for "corte seco",
       // in a muted grey) so it's crystal clear where a transition exists and
-      // where it doesn't, at a glance
+      // where it doesn't, at a glance. Each junction has its OWN transition.
       if (i > 0) {
+        const junctionIdx = i - 1;
+        const thisTransition = junctionTransitions[junctionIdx] || 'fade';
         const pill = document.createElement('div');
-        const isNone = selectedTransition === 'none';
+        const isNone = thisTransition === 'none';
         pill.className = 'v-transition-pill' + (isNone ? ' none' : '');
         pill.style.left = (start / totalDuration * 100) + '%';
-        pill.innerHTML = `<span class="v-transition-icon">${isNone ? '✂️' : '⧗'}</span>${isNone ? 'Corte' : TRANSITIONS[selectedTransition]}`;
-        pill.addEventListener('click', (e) => { e.stopPropagation(); openSheet('panelTransition'); });
+        pill.innerHTML = `<span class="v-transition-icon">${isNone ? '✂️' : '⧗'}</span>${isNone ? 'Corte' : TRANSITIONS[thisTransition]}`;
+        pill.addEventListener('click', (e) => {
+          e.stopPropagation();
+          activeJunctionIdx = junctionIdx;
+          renderTransitionGrid();
+          openSheet('panelTransition');
+        });
         trackVideo.appendChild(pill);
       }
     });
@@ -3250,7 +3268,8 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
     let blendProgress = 0;
     let nextEntry = null;
-    if (selectedTransition !== 'none' && activeIdx < layout.length - 1) {
+    const junctionType = junctionTransitions[activeIdx]; // junction AFTER this clip
+    if (junctionType !== 'none' && activeIdx < layout.length - 1) {
       const nextStart = layout[activeIdx + 1].start;
       if (playheadTime >= nextStart) {
         blendProgress = Math.min(1, (playheadTime - nextStart) / TRANSITION_DURATION);
@@ -3532,21 +3551,32 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
       if (clips.length === 1) {
         vOut = '0:v'; aOutRaw = '0:a';
-      } else if (selectedTransition === 'none') {
-        const inputsRefs = clips.map((_, i) => `[${i}:v][${i}:a]`).join('');
-        filterComplex += `${inputsRefs}concat=n=${clips.length}:v=1:a=1[vcat][acat];`;
-        vOut = 'vcat'; aOutRaw = 'acat';
       } else {
+        // normalize every clip's timestamps to start at 0 first — this is the
+        // standard fix for the "jump + gap" glitch xfade/acrossfade produce
+        // when fed inputs that were trimmed with -ss (their internal
+        // timestamps don't start exactly at zero, which throws off the
+        // offset math and causes a visible stutter/silence at each cut)
+        for (let i = 0; i < clips.length; i++) {
+          filterComplex += `[${i}:v]setpts=PTS-STARTPTS[v${i}n];[${i}:a]asetpts=PTS-STARTPTS[a${i}n];`;
+        }
         let cum = clipDuration(clips[0]);
-        let vLabel = '0:v', aLabel = '0:a';
+        let vLabel = `v0n`, aLabel = `a0n`;
         for (let i = 1; i < clips.length; i++) {
           const d = clipDuration(clips[i]);
-          const offset = Math.max(0, cum - TRANSITION_DURATION);
+          const junctionType = junctionTransitions[i - 1] || 'fade';
+          const isNone = junctionType === 'none';
+          // "corte seco" uses an imperceptibly short fade instead of branching
+          // into a separate concat-filter code path — one single, reliable
+          // mechanism for every junction, whatever type each one is set to
+          const dur = isNone ? 0.04 : TRANSITION_DURATION;
+          const type = isNone ? 'fade' : junctionType;
+          const offset = Math.max(0, cum - dur);
           const vOutLabel = `v${i}`, aOutLabel = `a${i}`;
-          filterComplex += `[${vLabel}][${i}:v]xfade=transition=${selectedTransition}:duration=${TRANSITION_DURATION}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
-          filterComplex += `[${aLabel}][${i}:a]acrossfade=d=${TRANSITION_DURATION}[${aOutLabel}];`;
+          filterComplex += `[${vLabel}][v${i}n]xfade=transition=${type}:duration=${dur}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
+          filterComplex += `[${aLabel}][a${i}n]acrossfade=d=${dur}[${aOutLabel}];`;
           vLabel = vOutLabel; aLabel = aOutLabel;
-          cum = cum + d - TRANSITION_DURATION;
+          cum = cum + d - dur;
         }
         vOut = vLabel; aOutRaw = aLabel;
       }
