@@ -443,6 +443,13 @@
     width:28px; height:28px; border:none;
     background:transparent; color:#ff5a5a; cursor:pointer; font-size:18px; font-weight:700;
   }
+  .v-time-inputs { display:flex; align-items:center; gap:8px; margin-top:6px; }
+  .v-time-inputs input {
+    flex:1; padding:8px; border-radius:8px; border:1px solid var(--input-border);
+    background:var(--input-bg); color:var(--text-main); font-size:13px; text-align:center;
+  }
+  .v-time-inputs span { opacity:0.6; }
+
   .v-mini-timeline {
     position:relative; height:36px; border-radius:8px; margin-top:8px;
     background: repeating-linear-gradient(90deg, #2a3a4a, #2a3a4a 14px, #24323f 14px, #24323f 28px);
@@ -2445,7 +2452,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   const MAX_CLIPS = 8;
   const MAX_TEXTS = 4;
   const MAX_TOTAL_SECONDS = 180;
-  const TRANSITION_DURATION = 0.6;
+  const TRANSITION_DURATION = 1.0;
 
   let ffmpeg = null;
   let ffmpegLoading = null;
@@ -3191,8 +3198,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   }
 
   function renderTextTimeLabelFor(t) {
-    const label = document.querySelector(`.v-text-time-label[data-id="${t.id}"]`);
-    if (label) label.textContent = `${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s`;
+    const startInput = document.querySelector(`.v-text-start-input[data-id="${t.id}"]`);
+    const endInput = document.querySelector(`.v-text-end-input[data-id="${t.id}"]`);
+    if (startInput) startInput.value = t.start.toFixed(1);
+    if (endInput) endInput.value = t.end.toFixed(1);
   }
 
   // ================= PLAYHEAD =================
@@ -3410,7 +3419,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
           <span style="font-size:13px; opacity:0.8;">Tamaño</span>
           <div class="sizebtn v-text-plus">+</div>
         </div>
-        <div class="hint">Tiempo: <span class="v-text-time-label" data-id="${t.id}">${t.start.toFixed(1)}s → ${t.end.toFixed(1)}s</span> — arrastrá el bloque "T${idx+1}" en la línea de tiempo de arriba para moverlo.</div>
+        <label>¿Cuándo aparece y desaparece? (en segundos)</label>
+        <div class="v-time-inputs">
+          <input type="number" class="v-text-start-input" data-id="${t.id}" min="0" step="0.1" value="${t.start.toFixed(1)}">
+          <span>→</span>
+          <input type="number" class="v-text-end-input" data-id="${t.id}" min="0" step="0.1" value="${t.end.toFixed(1)}">
+        </div>
+        <div class="hint">También podés arrastrar el bloque "T${idx+1}" en la línea de tiempo de arriba.</div>
       `;
       textsContainer.appendChild(item);
 
@@ -3419,6 +3434,8 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       const minusEl = item.querySelector('.v-text-minus');
       const plusEl = item.querySelector('.v-text-plus');
       const delEl = item.querySelector('.del');
+      const startInput = item.querySelector('.v-text-start-input');
+      const endInput = item.querySelector('.v-text-end-input');
 
       populateFontSelectFor(fontEl, t.fontFamily);
 
@@ -3431,6 +3448,20 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       minusEl.addEventListener('click', () => { t.scale = Math.max(0.4, t.scale - 0.1); updateMasterPreview(); });
       plusEl.addEventListener('click', () => { t.scale = Math.min(3, t.scale + 0.1); updateMasterPreview(); });
       delEl.addEventListener('click', () => removeText(t.id));
+
+      startInput.addEventListener('change', () => {
+        const v = Math.max(0, Math.min(parseFloat(startInput.value) || 0, t.end - 0.1));
+        t.start = v; startInput.value = v.toFixed(1);
+        renderMasterTimeline();
+        updateMasterPreview();
+      });
+      endInput.addEventListener('change', () => {
+        const max = totalDuration || 999;
+        const v = Math.max(t.start + 0.1, Math.min(parseFloat(endInput.value) || 0, max));
+        t.end = v; endInput.value = v.toFixed(1);
+        renderMasterTimeline();
+        updateMasterPreview();
+      });
     });
   }
 
@@ -3681,7 +3712,16 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       await ffmpeg.exec(args);
 
       const result = await ffmpeg.readFile('out.mp4');
-      const blob = new Blob([result.buffer], { type: 'video/mp4' });
+      // IMPORTANT: use the Uint8Array itself, never `.buffer` — ffmpeg.wasm's
+      // memory can grow while processing a real (larger) video, which
+      // detaches any earlier raw ArrayBuffer reference and silently turns it
+      // into a 0-byte buffer. Blob([result]) always reads the correct bytes
+      // regardless of memory growth; Blob([result.buffer]) is what was
+      // producing the "0kb, no error" empty downloads on real phone videos.
+      if (!result || result.byteLength < 1000) {
+        throw new Error('El video generado quedó vacío o corrupto (posible problema de memoria). Probá con menos clips o un video más corto.');
+      }
+      const blob = new Blob([result], { type: 'video/mp4' });
       const url = URL.createObjectURL(blob);
       resultVideo.src = url;
       resultCard.style.display = 'block';
