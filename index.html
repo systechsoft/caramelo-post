@@ -379,21 +379,57 @@
 
   /* ---- trim bar pinned to the bottom of the video preview itself ---- */
   .v-stage-trimbar {
-    position:absolute; left:0; right:0; bottom:0; height:34px; z-index:7;
-    background:rgba(20,20,25,0.55); touch-action:none;
+    position:absolute; left:0; right:0; bottom:0; height:46px; z-index:7;
+    background:rgba(15,15,20,0.72); touch-action:none;
+  }
+  .v-stage-trim-label {
+    position:absolute; top:-30px; left:50%; transform:translateX(-50%);
+    background:#ff2e9a; color:white; font-size:11px; font-weight:700;
+    padding:5px 12px; border-radius:12px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
   .v-stage-trim-dim {
-    position:absolute; top:0; bottom:0; background:rgba(0,0,0,0.75);
+    position:absolute; top:0; bottom:0; background:rgba(0,0,0,0.8);
   }
   .v-stage-trim-dim-l { left:0; }
   .v-stage-trim-dim-r { right:0; }
   .v-stage-trim-handle {
-    position:absolute; top:0; bottom:0; width:38px; background:#ff2e9a;
-    display:flex; align-items:center; justify-content:center; color:white; font-size:16px; font-weight:800;
-    cursor:ew-resize; touch-action:none; z-index:8;
+    position:absolute; top:0; bottom:0; width:42px; background:#ff2e9a;
+    display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:800;
+    cursor:ew-resize; touch-action:none; z-index:8; border:2px solid white;
+  }
+  .v-stage-trim-done {
+    position:absolute; top:-30px; right:0;
+    background:#1db954; color:white; font-size:11px; font-weight:700;
+    padding:5px 12px; border-radius:12px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
 
   .v-clip-edit-head { display:flex; align-items:center; justify-content:space-between; }
+
+  /* ---- bottom sheet: floats over the lower part of the screen, video stays put ---- */
+  .v-sheet-backdrop {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:40;
+    opacity:0; pointer-events:none; transition:opacity 0.2s ease;
+  }
+  .v-sheet-backdrop.open { opacity:1; pointer-events:auto; }
+  .v-bottom-sheet {
+    position:fixed; left:0; right:0; bottom:0; z-index:41;
+    background:var(--bg-grad-bottom); border-radius:20px 20px 0 0;
+    max-height:62vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    transform:translateY(100vh); transition:transform 0.25s ease;
+    box-shadow:0 -8px 30px rgba(0,0,0,0.4);
+    padding:8px 16px 24px;
+    border-top:1px solid var(--input-border);
+  }
+  .v-bottom-sheet.open { transform:translateY(0); }
+  .v-sheet-handle { width:40px; height:4px; background:var(--input-border); border-radius:3px; margin:6px auto 10px; }
+  .v-sheet-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .v-sheet-header span { font-weight:800; font-size:15px; color:var(--text-main); }
+  .v-sheet-close {
+    width:30px; height:30px; border-radius:50%; background:var(--input-bg);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-main); font-size:14px;
+  }
+  .v-sheet-panel { display:none; }
+  .v-sheet-panel.active { display:block; }
 
   .v-text-item {
     border:1px solid var(--input-border); border-radius:12px; padding:12px; margin-bottom:12px;
@@ -465,23 +501,26 @@
   .chip.active { background:#ff2e9a; border-color:#ff2e9a; color:white; }
 
   /* ---- Video tab: master multi-track timeline ---- */
-  .v-master-timeline {
+  .v-timeline-compact {
     position:relative; margin-top:14px; padding-top:14px; touch-action:none;
   }
   .v-master-playhead {
-    position:absolute; top:0; bottom:0; left:0; width:2px; background:var(--text-main);
-    z-index:5; pointer-events:none;
+    position:absolute; top:0; bottom:0; left:0; width:3px; background:#ff2e9a;
+    z-index:9; pointer-events:none;
   }
   .v-master-playhead::before {
-    content:""; position:absolute; top:-6px; left:-6px; width:14px; height:14px;
-    background:var(--text-main); border-radius:50%; border:2px solid #ff2e9a;
+    content:""; position:absolute; top:-7px; left:-7px; width:17px; height:17px;
+    background:#ff2e9a; border-radius:50%; border:2px solid white; box-shadow:0 0 0 1px #ff2e9a;
   }
-  .v-track-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; touch-action:none; }
-  .v-track-label { width:22px; text-align:center; font-size:15px; flex-shrink:0; }
+  .v-track-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; touch-action:none; }
+  .v-track-row-mini { height:0; margin-bottom:0; overflow:hidden; transition:height 0.15s ease; }
+  .v-track-row-mini[style*="display: flex"], .v-track-row-mini.shown { height:26px; margin-bottom:6px; }
+  .v-track-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .v-track {
-    position:relative; flex:1; width:0; height:40px; border-radius:8px;
-    background: var(--track-bg); border:1px solid var(--input-border); overflow:hidden; touch-action:none;
+    position:relative; flex:1; width:0; height:44px; border-radius:8px;
+    background: var(--track-bg); border:1px solid var(--input-border); overflow:visible; touch-action:none;
   }
+  .v-track-row-mini .v-track { height:26px; overflow:hidden; }
   .v-track-disabled {
     display:flex; align-items:center; justify-content:center;
     font-size:11px; opacity:0.55; color:var(--text-main);
@@ -498,22 +537,19 @@
     background:rgba(0,0,0,0.55); padding:1px 4px; border-radius:4px; margin:2px;
   }
   .v-clip-block.selected { border-color:#ff2e9a; box-shadow:0 0 0 1px #ff2e9a; }
-  .v-clip-edge {
-    position:absolute; top:0; bottom:0; width:12px; background:rgba(255,255,255,0.4);
-    cursor:ew-resize; touch-action:none;
+
+  /* transition pill — big and obvious, sits ON TOP of the boundary between
+     two clip thumbnails, tap it to change the transition for that gap */
+  .v-transition-pill {
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+    z-index:6; display:flex; align-items:center; gap:3px;
+    background:#ff8c28; color:white; border:2px solid var(--card-bg);
+    border-radius:14px; padding:3px 8px 3px 6px; font-size:10px; font-weight:700;
+    white-space:nowrap; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.35);
   }
-  .v-clip-edge.left { left:0; border-radius:6px 0 0 6px; }
-  .v-clip-edge.right { right:0; border-radius:0 6px 6px 0; }
-  .v-transition-mark {
-    position:absolute; top:0; bottom:0; width:22px; margin-left:-11px;
-    z-index:3; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .v-transition-mark::after {
-    content:"⧗"; font-size:16px; color:var(--text-main); background:#ff8c28;
-    width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    color:white; font-size:12px; box-shadow:0 0 0 2px var(--card-bg);
-  }
+  .v-transition-pill.none { background:#6b7684; }
+  .v-transition-pill .v-transition-icon { font-size:12px; }
+
   .v-text-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
     background: rgba(255,140,40,0.55); border:1px solid #ff8c28;
@@ -824,16 +860,52 @@ TODO INCLUIDO</textarea>
         <div id="vidTextsOverlay"></div>
         <div id="vidEmojisOverlay"></div>
         <div class="v-stage-trimbar" id="vidStageTrimBar" style="display:none;">
+          <div class="v-stage-trim-label" id="vidStageTrimLabel">Recortando clip 1</div>
           <div class="v-stage-trim-dim v-stage-trim-dim-l" id="vidStageTrimDimL"></div>
           <div class="v-stage-trim-dim v-stage-trim-dim-r" id="vidStageTrimDimR"></div>
           <div class="v-stage-trim-handle" id="vidStageTrimHandleL">◀</div>
           <div class="v-stage-trim-handle" id="vidStageTrimHandleR">▶</div>
+          <div class="v-stage-trim-done" id="vidStageTrimDone">✓ Listo</div>
         </div>
         <button id="vidPlayBtn" class="v-play-btn"></button>
       </div>
     </div>
 
-    <!-- icon toolbar: tap to open/close a small panel below the tracks — nothing stays open by default -->
+    <!-- compact timeline: video track always shown; audio/text/emoji rows
+         only take up space once they actually have something in them -->
+    <div class="v-timeline-compact" id="vidMasterTimeline">
+      <div class="v-master-playhead" id="vidPlayhead"></div>
+
+      <div class="v-track-row">
+        <div class="v-track v-track-video" id="vidTrackVideo"></div>
+        <div class="v-add-clip-icon" id="vidAddClipIcon">+</div>
+        <input type="file" id="vidFileInput" accept="video/*" style="display:none;">
+      </div>
+      <div class="v-track-row v-track-row-mini" id="vidRowAudio" style="display:none;">
+        <span class="v-track-dot" style="background:#3cc878;"></span>
+        <div class="v-track v-track-audio" id="vidTrackAudio"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row v-track-row-mini" id="vidRowTexts" style="display:none;">
+        <span class="v-track-dot" style="background:#ff8c28;"></span>
+        <div class="v-track v-track-texts" id="vidTrackTexts"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row v-track-row-mini" id="vidRowTexts2" style="display:none;">
+        <span class="v-track-dot" style="background:#ff8c28;"></span>
+        <div class="v-track v-track-texts" id="vidTrackTexts2"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+      <div class="v-track-row v-track-row-mini" id="vidRowEmoji" style="display:none;">
+        <span class="v-track-dot" style="background:#7850ff;"></span>
+        <div class="v-track v-track-emoji" id="vidTrackEmoji"></div>
+        <div class="v-track-spacer"></div>
+      </div>
+    </div>
+    <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00 / hasta 3:00</span></div>
+    <div class="hint" id="vidEmptyHint">Tocá el + para agregar tu primer clip.</div>
+
+    <!-- bottom icon toolbar: opens the bottom sheet below, video never moves -->
     <div class="v-icon-toolbar">
       <div class="v-icon-btn" data-panel="panelFormat"><span>📐</span>Formato</div>
       <div class="v-icon-btn" data-panel="panelFilter"><span>🎨</span>Filtro</div>
@@ -842,41 +914,37 @@ TODO INCLUIDO</textarea>
       <div class="v-icon-btn" data-panel="panelEmoji"><span>😀</span>Emoji</div>
       <div class="v-icon-btn" data-panel="panelBrand"><span>🏷️</span>Logo</div>
     </div>
+  </div>
 
-    <div class="v-master-timeline" id="vidMasterTimeline">
-      <div class="v-master-playhead" id="vidPlayhead"></div>
+  <button class="generate-btn" id="vidGenerateBtn">GENERAR VIDEO</button>
+  <div class="loading" id="vidLoadingMsg">Procesando el video, esto puede tardar unos minutos — no cierres la app...</div>
+  <div class="progress-mock" style="margin-top:10px; height:10px; border-radius:6px; background: var(--input-bg); overflow:hidden; border:1px solid var(--input-border);">
+    <div id="vidProgressFill" style="width:0%; height:100%; background:linear-gradient(90deg,#ff2e9a,#ff8c28); transition: width 0.2s;"></div>
+  </div>
+  <div class="hint" id="vidProgressText" style="text-align:center;"></div>
 
-      <div class="v-track-row">
-        <span class="v-track-label">🎬</span>
-        <div class="v-track v-track-video" id="vidTrackVideo"></div>
-        <div class="v-add-clip-icon" id="vidAddClipIcon">+</div>
-        <input type="file" id="vidFileInput" accept="video/*" style="display:none;">
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">🎵</span>
-        <div class="v-track v-track-audio" id="vidTrackAudio"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">📝</span>
-        <div class="v-track v-track-texts" id="vidTrackTexts"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">📝</span>
-        <div class="v-track v-track-texts" id="vidTrackTexts2"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-      <div class="v-track-row">
-        <span class="v-track-label">😀</span>
-        <div class="v-track v-track-emoji" id="vidTrackEmoji"></div>
-        <div class="v-track-spacer"></div>
-      </div>
-    </div>
-    <div class="time-labels"><span id="vidMasterTimeLabel">0:00</span><span id="vidMasterTotalLabel">0:00 / hasta 3:00</span></div>
-    <div class="hint" id="vidEmptyHint">Tocá el + de la pista 🎬 para agregar tu primer clip.</div>
+  <div class="card preview-wrap" id="vidResultCard" style="display:none;">
+    <h2 style="justify-content:center;"><span class="num">✓</span> Resultado</h2>
+    <video id="vidResultVideo" controls style="width:100%; max-width:460px; border-radius:14px;"></video>
+    <br>
+    <button class="download-btn" id="vidDownloadBtn">Descargar / Compartir</button>
+    <div class="hint" style="margin-top:10px;">Se abre el selector para guardar/compartir el video. Si no aparece nada, mantené presionado el video de arriba.</div>
+  </div>
 
-    <div id="vidClipEditCard" style="display:none;">
+</div>
+</div>
+
+<!-- ============ BOTTOM SHEET (floats over the lower part of the screen — the video and tracks above never move) ============ -->
+<div class="v-sheet-backdrop" id="vidSheetBackdrop"></div>
+<div class="v-bottom-sheet" id="vidBottomSheet">
+  <div class="v-sheet-handle"></div>
+  <div class="v-sheet-header">
+    <span id="vidSheetTitle">Herramienta</span>
+    <div class="v-sheet-close" id="vidSheetClose">✕</div>
+  </div>
+  <div class="v-sheet-body">
+
+    <div id="panelClipEdit" class="v-sheet-panel">
       <div class="v-clip-edit-head">
         <span id="vidClipEditName" style="font-weight:700; font-size:13px;"></span>
         <span id="vidEditDurLabel" style="font-weight:700; font-size:13px; opacity:0.8;"></span>
@@ -886,10 +954,15 @@ TODO INCLUIDO</textarea>
         <button type="button" id="vidClipMoveRight">Mover después ▶</button>
         <button type="button" id="vidClipDelete" style="color:#ff5a5a; border-color:rgba(255,90,90,0.4);">✕ Quitar</button>
       </div>
-      <div class="hint">Arrastrá las manijas rosadas de abajo del video (arriba de esta tarjeta) para recortar el inicio y el final.</div>
+      <div class="hint">Las manijas rosadas para recortar están pegadas justo abajo del video, arriba de todo.</div>
     </div>
 
-    <div class="v-panel" id="panelFormat">
+    <div id="panelTransition" class="v-sheet-panel">
+      <div class="chip-grid" id="vidTransitionGrid"></div>
+      <div class="hint">Se aplica entre estos dos clips. "Corte seco" es instantáneo, sin efecto.</div>
+    </div>
+
+    <div id="panelFormat" class="v-sheet-panel">
       <div class="aspect-grid">
         <div class="aspect-btn active" data-aspect="9:16"><div class="aspect-shape" style="width:14px;height:24px;"></div>9:16</div>
         <div class="aspect-btn" data-aspect="1:1"><div class="aspect-shape" style="width:20px;height:20px;"></div>1:1</div>
@@ -898,11 +971,11 @@ TODO INCLUIDO</textarea>
       </div>
     </div>
 
-    <div class="v-panel" id="panelFilter">
+    <div id="panelFilter" class="v-sheet-panel">
       <div class="filter-grid" id="vidFilterGrid"></div>
     </div>
 
-    <div class="v-panel" id="panelAudio">
+    <div id="panelAudio" class="v-sheet-panel">
       <div class="audio-modes" id="vidAudioModes">
         <button data-mode="original" class="active">🎵 Original</button>
         <button data-mode="music">🎶 Solo música</button>
@@ -935,47 +1008,25 @@ TODO INCLUIDO</textarea>
       </div>
     </div>
 
-    <div class="v-panel" id="panelText">
+    <div id="panelText" class="v-sheet-panel">
       <div id="vidTextsContainer"></div>
       <button class="add-clip-btn" id="vidAddTextBtn" style="margin-top:10px;">+ Agregar texto</button>
     </div>
 
-    <div class="v-panel" id="panelEmoji">
+    <div id="panelEmoji" class="v-sheet-panel">
       <div class="filter-grid" id="vidEmojiGrid"></div>
-      <div class="hint">Tocá uno para agregarlo (hasta 6). Se mueve y tiene su propio tiempo en la pista 😀.</div>
+      <div class="hint">Tocá uno para agregarlo (hasta 6). Se mueve y tiene su propio tiempo.</div>
       <div id="vidEmojiList"></div>
     </div>
 
-    <div class="v-panel" id="panelBrand">
+    <div id="panelBrand" class="v-sheet-panel">
       <div class="toggle-row">
         <span style="font-size:13px;">Mostrar logo y slogan (arrastrables sobre el video)</span>
         <label class="switch"><input type="checkbox" id="vidBrandToggle" checked><span class="slider"></span></label>
       </div>
     </div>
-  </div>
 
-  <div class="card" id="vidTransitionCard" style="display:none;">
-    <div class="v-icon-btn active" style="display:inline-flex; width:auto; margin-bottom:8px;"><span>⧗</span>Transición entre clips</div>
-    <div class="chip-grid" id="vidTransitionGrid"></div>
-    <div class="hint">Se aplica entre cada par de clips. "Corte seco" es instantáneo, sin efecto — se marca ⧗ en la pista donde sí hay transición.</div>
   </div>
-
-  <button class="generate-btn" id="vidGenerateBtn">GENERAR VIDEO</button>
-  <div class="loading" id="vidLoadingMsg">Procesando el video, esto puede tardar unos minutos — no cierres la app...</div>
-  <div class="progress-mock" style="margin-top:10px; height:10px; border-radius:6px; background: var(--input-bg); overflow:hidden; border:1px solid var(--input-border);">
-    <div id="vidProgressFill" style="width:0%; height:100%; background:linear-gradient(90deg,#ff2e9a,#ff8c28); transition: width 0.2s;"></div>
-  </div>
-  <div class="hint" id="vidProgressText" style="text-align:center;"></div>
-
-  <div class="card preview-wrap" id="vidResultCard" style="display:none;">
-    <h2 style="justify-content:center;"><span class="num">✓</span> Resultado</h2>
-    <video id="vidResultVideo" controls style="width:100%; max-width:460px; border-radius:14px;"></video>
-    <br>
-    <button class="download-btn" id="vidDownloadBtn">Descargar / Compartir</button>
-    <div class="hint" style="margin-top:10px;">Se abre el selector para guardar/compartir el video. Si no aparece nada, mantené presionado el video de arriba.</div>
-  </div>
-
-</div>
 </div>
 
 <canvas id="workCanvas" width="1080" height="1440" style="display:none;"></canvas>
@@ -2458,7 +2509,6 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   const videoInput = document.getElementById('vidFileInput');
   const videoA = document.getElementById('vidPreview');
   const videoB = document.getElementById('vidPreviewB');
-  const transitionCard = document.getElementById('vidTransitionCard');
   const transitionGrid = document.getElementById('vidTransitionGrid');
   const filterGrid = document.getElementById('vidFilterGrid');
   const generateBtn = document.getElementById('vidGenerateBtn');
@@ -2511,20 +2561,36 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   }
   function clipDuration(c) { return c.trimEnd - c.trimStart; }
 
-  // ================= ICON TOOLBAR (tap to open/close a small panel) =================
+  // ================= BOTTOM SHEET (floats over the lower screen; video/tracks never move) =================
+  const sheetBackdrop = document.getElementById('vidSheetBackdrop');
+  const bottomSheet = document.getElementById('vidBottomSheet');
+  const sheetTitle = document.getElementById('vidSheetTitle');
+  const sheetClose = document.getElementById('vidSheetClose');
+
+  const SHEET_TITLES = {
+    panelClipEdit: 'Clip seleccionado', panelTransition: 'Transición',
+    panelFormat: 'Formato', panelFilter: 'Filtro de color', panelAudio: 'Audio',
+    panelText: 'Textos', panelEmoji: 'Emojis', panelBrand: 'Logo y slogan',
+  };
+
+  function openSheet(panelId) {
+    document.querySelectorAll('.v-sheet-panel').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    panel.classList.add('active');
+    sheetTitle.textContent = SHEET_TITLES[panelId] || '';
+    sheetBackdrop.classList.add('open');
+    bottomSheet.classList.add('open');
+  }
+  function closeSheet() {
+    sheetBackdrop.classList.remove('open');
+    bottomSheet.classList.remove('open');
+  }
+  sheetClose.addEventListener('click', closeSheet);
+  sheetBackdrop.addEventListener('click', closeSheet);
+
   document.querySelectorAll('.v-icon-btn[data-panel]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const panelId = btn.dataset.panel;
-      const panel = document.getElementById(panelId);
-      const isOpen = panel.classList.contains('open');
-      // close every other panel/icon first — only one open at a time
-      document.querySelectorAll('.v-panel').forEach(p => p.classList.remove('open'));
-      document.querySelectorAll('.v-icon-btn[data-panel]').forEach(b => b.classList.remove('active'));
-      if (!isOpen) {
-        panel.classList.add('open');
-        btn.classList.add('active');
-      }
-    });
+    btn.addEventListener('click', () => openSheet(btn.dataset.panel));
   });
 
   // ================= ASPECT / FORMAT =================
@@ -2659,7 +2725,12 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
   function renderAudioTrack() {
     trackAudio.innerHTML = '';
-    if (!totalDuration) return;
+    const rowAudio = document.getElementById('vidRowAudio');
+    if (!totalDuration) { rowAudio.style.display = 'none'; return; }
+    // only take up space once the person actually touched the audio settings
+    const hasCustomAudio = audioMode !== 'original' || fadeIn !== 0.5 || fadeOut !== 0.5;
+    rowAudio.style.display = hasCustomAudio ? 'flex' : 'none';
+    if (!hasCustomAudio) return;
     const block = document.createElement('div');
     block.className = 'v-emoji-block';
     block.style.left = '0%';
@@ -2891,7 +2962,6 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     selectClip(clip.id);
 
     emptyHint.style.display = 'none';
-    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
     if (texts.length === 0) addText();
     renderTextsList();
   });
@@ -2923,14 +2993,26 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       block.addEventListener('click', () => selectClip(clip.id));
       trackVideo.appendChild(block);
 
-      if (i > 0 && selectedTransition !== 'none') {
-        const mark = document.createElement('div');
-        mark.className = 'v-transition-mark';
-        mark.style.left = (start / totalDuration * 100) + '%';
-        trackVideo.appendChild(mark);
+      // transition pill — always shown between clips (even for "corte seco",
+      // in a muted grey) so it's crystal clear where a transition exists and
+      // where it doesn't, at a glance
+      if (i > 0) {
+        const pill = document.createElement('div');
+        const isNone = selectedTransition === 'none';
+        pill.className = 'v-transition-pill' + (isNone ? ' none' : '');
+        pill.style.left = (start / totalDuration * 100) + '%';
+        pill.innerHTML = `<span class="v-transition-icon">${isNone ? '✂️' : '⧗'}</span>${isNone ? 'Corte' : TRANSITIONS[selectedTransition]}`;
+        pill.addEventListener('click', (e) => { e.stopPropagation(); openSheet('panelTransition'); });
+        trackVideo.appendChild(pill);
       }
     });
 
+    const row1 = document.getElementById('vidRowTexts');
+    const row2 = document.getElementById('vidRowTexts2');
+    const texts1 = texts.filter((t, idx) => idx % 2 === 0);
+    const texts2 = texts.filter((t, idx) => idx % 2 === 1);
+    row1.style.display = texts1.length ? 'flex' : 'none';
+    row2.style.display = texts2.length ? 'flex' : 'none';
     texts.forEach((t, idx) => {
       const block = document.createElement('div');
       block.className = 'v-text-block';
@@ -2943,6 +3025,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     });
 
     trackEmoji.innerHTML = '';
+    document.getElementById('vidRowEmoji').style.display = emojis.length ? 'flex' : 'none';
     emojis.forEach((em) => {
       const block = document.createElement('div');
       block.className = 'v-emoji-block';
@@ -2960,9 +3043,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   }
 
   // ================= DEDICATED CLIP EDITOR (select → big trim handles + move buttons) =================
-  const clipEditCard = document.getElementById('vidClipEditCard');
   const clipEditName = document.getElementById('vidClipEditName');
   const stageTrimBar = document.getElementById('vidStageTrimBar');
+  const stageTrimLabel = document.getElementById('vidStageTrimLabel');
+  const stageTrimDone = document.getElementById('vidStageTrimDone');
   const stageTrimDimL = document.getElementById('vidStageTrimDimL');
   const stageTrimDimR = document.getElementById('vidStageTrimDimR');
   const stageTrimHandleL = document.getElementById('vidStageTrimHandleL');
@@ -2979,14 +3063,22 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     previewVideoW = c.videoW; previewVideoH = c.videoH;
     renderMasterTimeline();
     layoutClipEditor();
-    clipEditCard.style.display = 'block';
     stageTrimBar.style.display = 'block';
+    stageTrimLabel.textContent = 'Recortando: ' + c.name;
     clipEditName.textContent = c.name;
+    openSheet('panelClipEdit');
   }
+
+  function deselectClip() {
+    selectedClipId = null;
+    stageTrimBar.style.display = 'none';
+    renderMasterTimeline();
+  }
+  stageTrimDone.addEventListener('click', deselectClip);
 
   function layoutClipEditor() {
     const c = clips.find(x => x.id === selectedClipId);
-    if (!c) { clipEditCard.style.display = 'none'; stageTrimBar.style.display = 'none'; return; }
+    if (!c) { stageTrimBar.style.display = 'none'; return; }
     const dur = c.duration || 1;
     const leftPct = (c.trimStart / dur * 100);
     const rightPct = (100 - (c.trimEnd / dur * 100));
@@ -3046,10 +3138,9 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   clipDeleteBtn.addEventListener('click', () => {
     clips = clips.filter(c => c.id !== selectedClipId);
     selectedClipId = clips.length ? clips[0].id : null;
-    clipEditCard.style.display = clips.length ? 'block' : 'none';
     if (selectedClipId) selectClip(selectedClipId);
+    else { deselectClip(); closeSheet(); }
     recomputeLayout();
-    transitionCard.style.display = clips.length > 1 ? 'block' : 'none';
   });
 
   function attachTextBlockDrag(el, t) {
@@ -3375,6 +3466,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
 
   // ================= GENERATE / EXPORT =================
   generateBtn.addEventListener('click', async () => {
+    closeSheet();
     if (clips.length === 0) { alert('Subí al menos un clip primero.'); return; }
     const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
     if (sumTrimmed > MAX_TOTAL_SECONDS + 5) { alert('El total supera los 3 minutos permitidos. Recortá algún clip.'); return; }
