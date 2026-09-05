@@ -166,8 +166,8 @@
   .row-item { display: grid; grid-template-columns: 1fr 1fr 60px 30px; gap: 6px; margin-bottom: 8px; align-items: center; }
   .row-item input { padding: 8px 8px; font-size: 12.5px; }
   .row-item .del {
-    background: rgba(255,60,60,0.25); border: 1px solid rgba(255,60,60,0.4); color: #ffb0b0;
-    border-radius: 8px; height: 34px; display:flex; align-items:center; justify-content:center; cursor: pointer; font-size: 16px;
+    background: none; border: none; color: #ff5a5a;
+    height: 34px; display:flex; align-items:center; justify-content:center; cursor: pointer; font-size: 20px; font-weight:700;
   }
 
   .format-toggle { display: flex; gap: 8px; margin-top: 8px; }
@@ -425,8 +425,8 @@
   .v-sheet-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .v-sheet-header span { font-weight:800; font-size:15px; color:var(--text-main); }
   .v-sheet-close {
-    width:30px; height:30px; border-radius:50%; background:var(--input-bg);
-    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-main); font-size:14px;
+    width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--text-main); font-size:18px; font-weight:700; background:none;
   }
   .v-sheet-panel { display:none; }
   .v-sheet-panel.active { display:block; }
@@ -440,8 +440,8 @@
   }
   .v-text-item .v-text-head .v-text-title { font-weight:700; font-size:13px; }
   .v-text-item .del {
-    width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,90,90,0.4);
-    background:transparent; color:#ff5a5a; cursor:pointer; font-size:14px;
+    width:28px; height:28px; border:none;
+    background:transparent; color:#ff5a5a; cursor:pointer; font-size:18px; font-weight:700;
   }
   .v-mini-timeline {
     position:relative; height:36px; border-radius:8px; margin-top:8px;
@@ -542,13 +542,14 @@
      two clip thumbnails, tap it to change the transition for that gap */
   .v-transition-pill {
     position:absolute; top:50%; transform:translate(-50%,-50%);
-    z-index:6; display:flex; align-items:center; gap:3px;
+    z-index:6; display:flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:50%;
     background:#ff8c28; color:white; border:2px solid var(--card-bg);
-    border-radius:14px; padding:3px 8px 3px 6px; font-size:10px; font-weight:700;
-    white-space:nowrap; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.35);
+    cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.35);
   }
   .v-transition-pill.none { background:#6b7684; }
-  .v-transition-pill .v-transition-icon { font-size:12px; }
+  .v-transition-pill .v-transition-icon { font-size:11px; }
+  .v-transition-pill .v-transition-label { display:none; }
 
   .v-text-block {
     position:absolute; top:2px; bottom:2px; border-radius:6px;
@@ -2828,10 +2829,11 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       const dur = origEnd - origStart;
       let newStart = Math.max(0, Math.min(origStart + dt, totalDuration - dur));
       em.start = newStart; em.end = newStart + dur;
-      renderMasterTimeline();
+      // same fix as text blocks — move directly, don't rebuild the DOM mid-drag
+      el.style.left = (newStart / totalDuration * 100) + '%';
       e.stopPropagation();
     });
-    function end() { dragging = false; }
+    function end() { dragging = false; renderMasterTimeline(); }
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
   }
@@ -3014,7 +3016,8 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         const isNone = thisTransition === 'none';
         pill.className = 'v-transition-pill' + (isNone ? ' none' : '');
         pill.style.left = (start / totalDuration * 100) + '%';
-        pill.innerHTML = `<span class="v-transition-icon">${isNone ? '✂️' : '⧗'}</span>${isNone ? 'Corte' : TRANSITIONS[thisTransition]}`;
+        pill.innerHTML = `<span class="v-transition-icon">${isNone ? '✂️' : '⧗'}</span>`;
+        pill.title = isNone ? 'Corte seco' : TRANSITIONS[thisTransition];
         pill.addEventListener('click', (e) => {
           e.stopPropagation();
           activeJunctionIdx = junctionIdx;
@@ -3176,11 +3179,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       const dur = origEnd - origStart;
       let newStart = Math.max(0, Math.min(origStart + dt, totalDuration - dur));
       t.start = newStart; t.end = newStart + dur;
-      renderMasterTimeline();
+      // move the block directly (no full re-render mid-drag — rebuilding the
+      // DOM here would replace this very element and cut the drag off dead)
+      el.style.left = (newStart / totalDuration * 100) + '%';
       renderTextTimeLabelFor(t);
       e.stopPropagation();
     });
-    function end() { dragging = false; }
+    function end() { dragging = false; renderMasterTimeline(); }
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
   }
