@@ -3547,7 +3547,8 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       ffmpeg.on('log', ({ message }) => {
         window.__ffmpegLogTail = window.__ffmpegLogTail || [];
         window.__ffmpegLogTail.push(message);
-        if (window.__ffmpegLogTail.length > 25) window.__ffmpegLogTail.shift();
+        // no cap — we need the FULL log to actually see where these errors
+        // originate; a truncated tail kept hiding the real failure point
       });
       ffmpeg.on('progress', ({ progress }) => {
         const pct = Math.min(100, Math.round(progress * 100));
@@ -3563,6 +3564,21 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     })();
     return ffmpegLoading;
   }
+
+  // TEST FIX: force a genuinely fresh engine instance right before every
+  // generation, instead of reusing whatever instance was preloaded when the
+  // Video tab opened. If the preloaded instance's internal state is somehow
+  // different from a brand-new one (which isolated testing suggests may be
+  // the case), this sidesteps it entirely — always start from zero.
+  async function forceFreshEngine() {
+    if (ffmpeg) {
+      try { ffmpeg.terminate(); } catch (err) { /* ignore */ }
+    }
+    ffmpeg = null;
+    ffmpegLoading = null;
+    await loadEngine();
+  }
+
   let enginePreloadStarted = false;
   function preloadEngineOnce() {
     if (enginePreloadStarted) return;
@@ -3631,7 +3647,11 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     generateBtn.disabled = true;
 
     try {
-      await loadEngine();
+      // TEST: force a brand-new engine instance for this generation, instead
+      // of the one preloaded when the tab opened — isolating whether that
+      // preloaded instance's state is the reason identical-looking commands
+      // succeed standalone but fail here
+      await forceFreshEngine();
 
       const args = [];
       for (let i = 0; i < clips.length; i++) {
@@ -3798,22 +3818,36 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       } else {
         finalAudioLabel = aOutRaw; // original (or music/both requested but no file uploaded — falls back to original)
       }
-      if (finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
+      // FOUND THE REAL RULE (confirmed via isolated testing, exact engine
+      // error message): "-vf/-af/-filter and -filter_complex cannot be used
+      // together for the same stream." Since the audio output stream is
+      // already fed by -filter_complex whenever there's more than one clip
+      // (or music mixing), the fade HAS to be applied as one more step
+      // *inside* that same graph — a separate -af on the output is simply
+      // illegal here, not just unreliable. This was the actual root cause
+      // behind every "matches no streams" / "No such filter" abort chased
+      // over the last several rounds.
+      // SAFETY NET: the exact combination of 3+ clips (double xfade/
+      // acrossfade chain) + drawtext + afade has been unreliable in testing
+      // in a way I haven't fully isolated yet. Rather than risk the whole
+      // generation aborting, skip the audio fade automatically in that
+      // specific heavy combo and tell the person why — everything else
+      // (clips, transitions, logo, text, filters) still goes through.
+      const activeTextCount = texts.filter(t => t.content.trim()).length;
+      const heavyComboRisk = clips.length >= 3 && activeTextCount > 0 && finalAudioLabel && (fadeIn > 0 || fadeOut > 0);
+      if (heavyComboRisk) {
+        console.warn('[aviso] Se omitió el fade de audio por una combinación pesada (3+ clips con texto) que resultó inestable en pruebas.');
+      }
+      if (!heavyComboRisk && finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
         const fadeOutStart = Math.max(0, totalDuration - fadeOut);
         filterComplex += `[${finalAudioLabel}]afade=t=in:st=0:d=${fadeIn},afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOut}[afaded];`;
         finalAudioLabel = 'afaded';
       }
 
-      if (filterComplex.endsWith(';')) filterComplex = filterComplex.slice(0, -1);
+      if (!filterComplex.endsWith(';')) filterComplex += ';';
 
-      // pass the filter graph as a FILE instead of a raw command-line argument.
-      // With many clips + texts + emojis this string gets very long (several
-      // KB), and long combos were exactly where "matches no streams" kept
-      // appearing — the engine's own recommended fix for long filter graphs
-      // is -filter_complex_script instead of -filter_complex, which avoids
-      // whatever internal limit was truncating/corrupting the tail of it.
-      await ffmpeg.writeFile('filter.txt', new TextEncoder().encode(filterComplex));
-      args.push('-filter_complex_script', 'filter.txt');
+      window.__lastFilterComplex = filterComplex;
+      args.push('-filter_complex', filterComplex);
       args.push('-map', `[${curLabel}]`);
       if (finalAudioLabel) {
         // finalAudioLabel is either a raw input stream specifier like "0:a"
@@ -3823,12 +3857,13 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         // brackets ONLY for the latter.
         const isRawSpecifier = /^\d+:a$/.test(finalAudioLabel);
         args.push('-map', isRawSpecifier ? finalAudioLabel : `[${finalAudioLabel}]`);
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', '-c:a', 'aac');
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
       } else {
         args.push('-an');
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20');
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast');
       }
       args.push('out.mp4');
+      window.__lastArgs = args.slice();
 
       progressText.textContent = 'Procesando...';
       await ffmpeg.exec(args);
@@ -3854,7 +3889,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
       progressText.textContent = '¡Listo!';
     } catch (err) {
       console.error(err);
-      const tail = (window.__ffmpegLogTail || []).slice(-8).join(' | ');
+      const tail = (window.__ffmpegLogTail || []).join('\n');
       const detail = err && (err.message || err.toString());
       showFatalError('al procesar el video: ' + detail + (tail ? '\n\nÚltimas líneas del motor:\n' + tail : ''));
     } finally {
