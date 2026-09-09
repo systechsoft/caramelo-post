@@ -3010,24 +3010,54 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     return new Promise((resolve) => {
       const url = URL.createObjectURL(file);
       const v = document.createElement('video');
-      v.preload = 'metadata'; v.muted = true; v.src = url;
-      v.onloadedmetadata = () => { v.currentTime = Math.min(0.1, (v.duration || 1) / 2); };
-      v.onseeked = () => {
-        let thumb = null;
-        try {
-          const c = document.createElement('canvas');
-          c.width = 80; c.height = 80;
-          const ctx = c.getContext('2d');
-          const vw = v.videoWidth, vh = v.videoHeight;
-          const scale = Math.max(80 / vw, 80 / vh);
-          const nw = vw * scale, nh = vh * scale;
-          ctx.drawImage(v, (80 - nw) / 2, (80 - nh) / 2, nw, nh);
-          thumb = c.toDataURL('image/jpeg', 0.7);
-        } catch (err) {}
-        resolve({ duration: v.duration || 1, videoW: v.videoWidth || 1080, videoH: v.videoHeight || 1920, thumb });
-        URL.revokeObjectURL(url);
+      v.preload = 'metadata'; v.muted = true; v.playsInline = true; v.src = url;
+      let settled = false;
+
+      function finish(duration, videoW, videoH, thumb) {
+        if (settled) return;
+        settled = true;
+        resolve({ duration, videoW, videoH, thumb });
+      }
+
+      // resolve the DURATION as soon as metadata loads — this is the number
+      // that actually matters for trimming/transitions, and it's already
+      // available right here. Previously this waited on a subsequent
+      // seek+'seeked' event before resolving anything at all; that event
+      // doesn't reliably fire for every video codec/container (confirmed:
+      // real phone-recorded QuickTime .mp4 files can hang here), which
+      // silently fell back to a bogus 1-second duration for the WHOLE clip
+      // after a 4s timeout — throwing off every transition offset downstream.
+      v.onloadedmetadata = () => {
+        const dur = v.duration && isFinite(v.duration) ? v.duration : 1;
+        const vw = v.videoWidth || 1080, vh = v.videoHeight || 1920;
+        // try to also grab a thumbnail, but don't let it block resolving —
+        // give it a short leash and fall back to no-thumbnail if it stalls
+        let thumbSettled = false;
+        const thumbTimeout = setTimeout(() => {
+          if (!thumbSettled) { thumbSettled = true; finish(dur, vw, vh, null); }
+        }, 1200);
+        v.onseeked = () => {
+          if (thumbSettled) return;
+          thumbSettled = true;
+          clearTimeout(thumbTimeout);
+          let thumb = null;
+          try {
+            const c = document.createElement('canvas');
+            c.width = 80; c.height = 80;
+            const ctx = c.getContext('2d');
+            const scale = Math.max(80 / vw, 80 / vh);
+            const nw = vw * scale, nh = vh * scale;
+            ctx.drawImage(v, (80 - nw) / 2, (80 - nh) / 2, nw, nh);
+            thumb = c.toDataURL('image/jpeg', 0.7);
+          } catch (err) {}
+          finish(dur, vw, vh, thumb);
+          URL.revokeObjectURL(url);
+        };
+        try { v.currentTime = Math.min(0.1, dur / 2); } catch (err) {}
       };
-      setTimeout(() => resolve({ duration: 1, videoW: 1080, videoH: 1920, thumb: null }), 4000);
+      // final safety net only for totally broken files that never even fire
+      // loadedmetadata — real duration always wins when it's available
+      setTimeout(() => finish(1, 1080, 1920, null), 6000);
     });
   }
 
@@ -3035,23 +3065,42 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   const emptyHint = document.getElementById('vidEmptyHint');
   addClipIcon.addEventListener('click', () => videoInput.click());
 
+  let pendingClipUploads = 0;
+
   videoInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     videoInput.value = '';
     if (!file) return;
     if (clips.length >= MAX_CLIPS) { alert(`Máximo ${MAX_CLIPS} clips.`); return; }
-    const meta = await extractClipMetadata(file);
-    const clip = {
-      id: clipIdCounter++, file, name: file.name, duration: meta.duration,
-      trimStart: 0, trimEnd: meta.duration, videoW: meta.videoW, videoH: meta.videoH, thumb: meta.thumb,
-    };
-    clips.push(clip);
-    recomputeLayout();
-    selectClip(clip.id);
+    // block Generate while ANY clip is still being processed — with some
+    // real phone video formats (QuickTime .mov-style mp4) reading the
+    // duration/thumbnail takes noticeably longer than with simpler files,
+    // and generating before that finishes silently drops that clip from
+    // the video entirely (it was never added to the list in time)
+    pendingClipUploads++;
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'PROCESANDO CLIP...';
+    try {
+      const meta = await extractClipMetadata(file);
+      const clip = {
+        id: clipIdCounter++, file, name: file.name, duration: meta.duration,
+        trimStart: 0, trimEnd: meta.duration, videoW: meta.videoW, videoH: meta.videoH, thumb: meta.thumb,
+      };
+      clips.push(clip);
+      recomputeLayout();
+      selectClip(clip.id);
 
-    emptyHint.style.display = 'none';
-    if (texts.length === 0) addText();
-    renderTextsList();
+      emptyHint.style.display = 'none';
+      if (texts.length === 0) addText();
+      renderTextsList();
+    } finally {
+      pendingClipUploads--;
+      if (pendingClipUploads <= 0) {
+        pendingClipUploads = 0;
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'GENERAR VIDEO';
+      }
+    }
   });
 
 
@@ -3624,6 +3673,7 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
   // ================= GENERATE / EXPORT =================
   generateBtn.addEventListener('click', async () => {
     closeSheet();
+    if (pendingClipUploads > 0) { alert('Esperá a que terminen de procesarse los clips que subiste (mirá el botón, dice "Procesando clip...").'); return; }
     if (clips.length === 0) { alert('Subí al menos un clip primero.'); return; }
     const sumTrimmed = clips.reduce((s, c) => s + clipDuration(c), 0);
     if (sumTrimmed > MAX_TOTAL_SECONDS + 5) { alert('El total supera los 3 minutos permitidos. Recortá algún clip.'); return; }
@@ -3647,77 +3697,37 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
     generateBtn.disabled = true;
 
     try {
-      // TEST: force a brand-new engine instance for this generation, instead
-      // of the one preloaded when the tab opened — isolating whether that
-      // preloaded instance's state is the reason identical-looking commands
-      // succeed standalone but fail here
-      await forceFreshEngine();
+      await loadEngine();
 
-      const args = [];
+      // ============================================================
+      // STEP 1 of 3: combine clips with their transitions + color filter
+      // + crop/scale to final resolution. Nothing else touches this step.
+      // ============================================================
+      progressText.textContent = 'Paso 1 de 3: uniendo clips...';
+      const args1 = [];
       for (let i = 0; i < clips.length; i++) {
         const c = clips[i];
         const buf = new Uint8Array(await c.file.arrayBuffer());
         await ffmpeg.writeFile(`clip${i}.mp4`, buf);
-        args.push('-ss', String(c.trimStart), '-t', String(clipDuration(c)), '-i', `clip${i}.mp4`);
+        args1.push('-ss', String(c.trimStart), '-t', String(clipDuration(c)), '-i', `clip${i}.mp4`);
       }
 
-      const logoInputIdx = clips.length;
-      if (brandVisible) {
-        const logoBytes = Uint8Array.from(atob(LOGO_B64), c => c.charCodeAt(0));
-        await ffmpeg.writeFile('logo.png', logoBytes);
-        args.push('-i', 'logo.png');
-      }
-
-      // emoji sticker inputs
-      const activeEmojis = emojis.map(em => ({
-        ...em,
-        start: Math.max(0, Math.min(em.start, totalDuration - 0.1)),
-        end: Math.max(0.1, Math.min(em.end, totalDuration)),
-      }));
-      const emojiInputIdx = {};
-      let nextInputIdx = logoInputIdx + (brandVisible ? 1 : 0);
-      for (const em of activeEmojis) {
-        const b64 = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
-        if (!b64) continue;
-        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const fname = `emoji_${em.id}.png`;
-        await ffmpeg.writeFile(fname, bytes);
-        args.push('-i', fname);
-        emojiInputIdx[em.id] = nextInputIdx++;
-      }
-
-      // music input (looped so it always covers the whole final duration)
-      let musicInputIdx = null;
-      if ((audioMode === 'music' || audioMode === 'both') && musicFile) {
-        const musicBytes = new Uint8Array(await musicFile.arrayBuffer());
-        await ffmpeg.writeFile('music.mp3', musicBytes);
-        args.push('-stream_loop', '-1', '-i', 'music.mp3');
-        musicInputIdx = nextInputIdx++;
-      }
-
-      let filterComplex = '';
+      let filterComplex1 = '';
       let vOut, aOutRaw;
+      const targetRatio = ASPECTS[selectedAspect] || 9/16;
+      const outW = targetRatio <= 1 ? 1080 : Math.round(1080 * targetRatio);
+      const outH = targetRatio <= 1 ? Math.round(1080 / targetRatio) : 1080;
 
       if (clips.length === 1) {
         vOut = '0:v'; aOutRaw = '0:a';
       } else {
-        // compute the target resolution up front — every clip gets forced to
-        // this exact size before xfade, because xfade/most multi-input video
-        // filters REQUIRE every input to match dimensions exactly. Phone
-        // clips from different apps/cameras often come in different
-        // resolutions (e.g. 576x1024 vs 1080x1920), which is exactly what
-        // was throwing "input link parameters do not match" and aborting.
-        const preRatio = ASPECTS[selectedAspect] || 9/16;
+        // every clip forced to a common resolution before xfade — required
+        // because clips from different apps/cameras often differ in size
+        const preRatio = targetRatio;
         const preW = preRatio <= 1 ? 1080 : Math.round(1080 * preRatio);
         const preH = preRatio <= 1 ? Math.round(1080 / preRatio) : 1080;
-
-        // normalize every clip's timestamps to start at 0 first — this is the
-        // standard fix for the "jump + gap" glitch xfade/acrossfade produce
-        // when fed inputs that were trimmed with -ss (their internal
-        // timestamps don't start exactly at zero, which throws off the
-        // offset math and causes a visible stutter/silence at each cut)
         for (let i = 0; i < clips.length; i++) {
-          filterComplex += `[${i}:v]scale=${preW}:${preH}:force_original_aspect_ratio=increase,crop=${preW}:${preH},setpts=PTS-STARTPTS[v${i}n];[${i}:a]asetpts=PTS-STARTPTS[a${i}n];`;
+          filterComplex1 += `[${i}:v]scale=${preW}:${preH}:force_original_aspect_ratio=increase,crop=${preW}:${preH},setpts=PTS-STARTPTS[v${i}n];[${i}:a]asetpts=PTS-STARTPTS[a${i}n];`;
         }
         let cum = clipDuration(clips[0]);
         let vLabel = `v0n`, aLabel = `a0n`;
@@ -3725,56 +3735,82 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
           const d = clipDuration(clips[i]);
           const junctionType = junctionTransitions[i - 1] || 'fade';
           const isNone = junctionType === 'none';
-          // "corte seco" uses an imperceptibly short fade instead of branching
-          // into a separate concat-filter code path — one single, reliable
-          // mechanism for every junction, whatever type each one is set to
           const dur = isNone ? 0.04 : TRANSITION_DURATION;
           const type = isNone ? 'fade' : junctionType;
           const offset = Math.max(0, cum - dur);
           const vOutLabel = `v${i}`, aOutLabel = `a${i}`;
-          filterComplex += `[${vLabel}][v${i}n]xfade=transition=${type}:duration=${dur}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
-          filterComplex += `[${aLabel}][a${i}n]acrossfade=d=${dur}[${aOutLabel}];`;
+          filterComplex1 += `[${vLabel}][v${i}n]xfade=transition=${type}:duration=${dur}:offset=${offset.toFixed(3)}[${vOutLabel}];`;
+          filterComplex1 += `[${aLabel}][a${i}n]acrossfade=d=${dur}[${aOutLabel}];`;
           vLabel = vOutLabel; aLabel = aOutLabel;
           cum = cum + d - dur;
         }
         vOut = vLabel; aOutRaw = aLabel;
       }
-      // NOTE: previously this normalized through an extra `[${aOutRaw}]anull[aorig];`
-      // hop before anything else could use it. Removed that indirection —
-      // every later step now references aOutRaw directly. One less link in
-      // the chain, one less thing that could go wrong.
 
-      // color filter
       const filterDef = FILTERS[selectedFilter];
-      let curLabel = vOut;
+      let curLabel1 = vOut;
       if (filterDef.vf) {
-        filterComplex += `[${curLabel}]${filterDef.vf}[vfilt];`;
-        curLabel = 'vfilt';
+        filterComplex1 += `[${curLabel1}]${filterDef.vf}[vfilt];`;
+        curLabel1 = 'vfilt';
+      }
+      filterComplex1 += `[${curLabel1}]crop='min(iw,ih*${targetRatio})':'min(ih,iw/${targetRatio})':(iw-ow)/2:(ih-oh)/2[vcrop];`;
+      filterComplex1 += `[vcrop]scale=${outW}:${outH}[vscaled];`;
+      curLabel1 = 'vscaled';
+      if (!filterComplex1.endsWith(';')) filterComplex1 += ';';
+
+      args1.push('-filter_complex', filterComplex1);
+      args1.push('-map', `[${curLabel1}]`);
+      const isRawA = /^\d+:a$/.test(aOutRaw);
+      args1.push('-map', isRawA ? aOutRaw : `[${aOutRaw}]`);
+      args1.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
+      args1.push('step1.mp4');
+      window.__lastArgsStep1 = args1.slice();
+      await ffmpeg.exec(args1);
+      for (let i = 0; i < clips.length; i++) { try { await ffmpeg.deleteFile(`clip${i}.mp4`); } catch (e) {} }
+
+      // ============================================================
+      // STEP 2 of 3: overlay logo, slogan, texts and emojis on top of
+      // the combined video from step 1. Audio just passes through as-is.
+      // ============================================================
+      progressText.textContent = 'Paso 2 de 3: agregando logo y textos...';
+      const args2 = ['-i', 'step1.mp4'];
+      let curLabel2 = '0:v';
+      let filterComplex2 = '';
+      let nextInputIdx2 = 1;
+      const logoInputIdx = brandVisible ? nextInputIdx2++ : -1;
+      if (brandVisible) {
+        const logoBytes = Uint8Array.from(atob(LOGO_B64), c => c.charCodeAt(0));
+        await ffmpeg.writeFile('logo.png', logoBytes);
+        args2.push('-i', 'logo.png');
+      }
+      const activeEmojis = emojis.map(em => ({
+        ...em,
+        start: Math.max(0, Math.min(em.start, totalDuration - 0.1)),
+        end: Math.max(0.1, Math.min(em.end, totalDuration)),
+      }));
+      const emojiInputIdx = {};
+      for (const em of activeEmojis) {
+        const b64 = (typeof EMOJI_STICKERS !== 'undefined') ? EMOJI_STICKERS.thumbs[em.key] : null;
+        if (!b64) continue;
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const fname = `emoji_${em.id}.png`;
+        await ffmpeg.writeFile(fname, bytes);
+        args2.push('-i', fname);
+        emojiInputIdx[em.id] = nextInputIdx2++;
       }
 
-      // crop to selected aspect ratio (centered), then force final output to 1080px
-      const targetRatio = ASPECTS[selectedAspect] || 9/16;
-      filterComplex += `[${curLabel}]crop='min(iw,ih*${targetRatio})':'min(ih,iw/${targetRatio})':(iw-ow)/2:(ih-oh)/2[vcrop];`;
-      curLabel = 'vcrop';
-      const outW = targetRatio <= 1 ? 1080 : Math.round(1080 * targetRatio);
-      const outH = targetRatio <= 1 ? Math.round(1080 / targetRatio) : 1080;
-      filterComplex += `[${curLabel}]scale=${outW}:${outH}[vscaled];`;
-      curLabel = 'vscaled';
-
-      // logo + slogan overlay (burned in for the whole duration)
+      let anyOverlay = false;
       if (brandVisible) {
-        filterComplex += `[${logoInputIdx}:v]scale=iw*0.5:-1[logoscaled];`;
-        filterComplex += `[${curLabel}][logoscaled]overlay=x=(main_w*${logoState.xf}-overlay_w/2):y=(main_h*${logoState.yf}-overlay_h/2)[vlogo];`;
-        curLabel = 'vlogo';
+        filterComplex2 += `[${logoInputIdx}:v]scale=iw*0.5:-1[logoscaled];`;
+        filterComplex2 += `[${curLabel2}][logoscaled]overlay=x=(main_w*${logoState.xf}-overlay_w/2):y=(main_h*${logoState.yf}-overlay_h/2)[vlogo];`;
+        curLabel2 = 'vlogo'; anyOverlay = true;
 
         const alexBrushName = await ensureAlexBrushInFFmpegFS();
         const sloganSize = Math.round(outH * 0.022 * sloganState.scale);
-        filterComplex += `[${curLabel}]drawtext=fontfile=${alexBrushName}:text='¡La dulce manera de viajar\u2019':fontcolor=white:fontsize=${sloganSize}:borderw=2:bordercolor=black:x=(main_w*${sloganState.xf}-text_w/2):y=(main_h*${sloganState.yf}-text_h/2)[vslogan];`;
-        curLabel = 'vslogan';
+        filterComplex2 += `[${curLabel2}]drawtext=fontfile=${alexBrushName}:text='¡La dulce manera de viajar\u2019':fontcolor=white:fontsize=${sloganSize}:borderw=2:bordercolor=black:x=(main_w*${sloganState.xf}-text_w/2):y=(main_h*${sloganState.yf}-text_h/2)[vslogan];`;
+        curLabel2 = 'vslogan';
       }
 
-      // texts — clamp start/end to the real final duration one last time as a
-      // safety net, in case something was added right before Generate
       const activeTexts = texts.filter(t => t.content.trim()).map(t => ({
         ...t,
         start: Math.max(0, Math.min(t.start, totalDuration - 0.1)),
@@ -3787,11 +3823,10 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         const safeText = escapeDrawtext(t.content.trim());
         const size = Math.round(baseFontSize * t.scale);
         const outLabel = `txt${i}`;
-        filterComplex += `[${curLabel}]drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${t.start},${t.end})'[${outLabel}];`;
-        curLabel = outLabel;
+        filterComplex2 += `[${curLabel2}]drawtext=fontfile=${fontVirtualName}:text='${safeText}':fontcolor=white:fontsize=${size}:line_spacing=10:borderw=4:bordercolor=black:x=(main_w*${t.xf}-text_w/2):y=(main_h*${t.yf}-text_h/2):enable='between(t,${t.start},${t.end})'[${outLabel}];`;
+        curLabel2 = outLabel; anyOverlay = true;
       }
 
-      // emojis
       for (let i = 0; i < activeEmojis.length; i++) {
         const em = activeEmojis[i];
         const idx = emojiInputIdx[em.id];
@@ -3799,87 +3834,87 @@ const EMOJI_STICKERS = {"thumbs": {"sun": "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAA
         const scaledLabel = `emsc${i}`;
         const outLabel = `em${i}`;
         const emSize = Math.round(outH * 0.05 * em.scale);
-        filterComplex += `[${idx}:v]scale=${emSize}:${emSize}[${scaledLabel}];`;
-        filterComplex += `[${curLabel}][${scaledLabel}]overlay=x=(main_w*${em.xf}-overlay_w/2):y=(main_h*${em.yf}-overlay_h/2):enable='between(t,${em.start},${em.end})'[${outLabel}];`;
-        curLabel = outLabel;
+        filterComplex2 += `[${idx}:v]scale=${emSize}:${emSize}[${scaledLabel}];`;
+        filterComplex2 += `[${curLabel2}][${scaledLabel}]overlay=x=(main_w*${em.xf}-overlay_w/2):y=(main_h*${em.yf}-overlay_h/2):enable='between(t,${em.start},${em.end})'[${outLabel}];`;
+        curLabel2 = outLabel; anyOverlay = true;
       }
 
-      // audio: build final audio label based on the selected mode
-      let finalAudioLabel = null; // null => no audio (-an)
+      if (anyOverlay) {
+        if (!filterComplex2.endsWith(';')) filterComplex2 += ';';
+        args2.push('-filter_complex', filterComplex2);
+        args2.push('-map', `[${curLabel2}]`);
+        args2.push('-map', '0:a');
+        args2.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'copy');
+      } else {
+        // nothing to overlay — just carry the file forward untouched
+        args2.push('-c', 'copy');
+      }
+      args2.push('step2.mp4');
+      window.__lastArgsStep2 = args2.slice();
+      await ffmpeg.exec(args2);
+      try { await ffmpeg.deleteFile('step1.mp4'); } catch (e) {}
+
+      // ============================================================
+      // STEP 3 of 3: audio only — music mixing and/or fade in/out. Video
+      // is simply copied through untouched (no re-encode needed).
+      // ============================================================
+      progressText.textContent = 'Paso 3 de 3: ajustando el audio...';
+      const args3 = ['-i', 'step2.mp4'];
+      let musicInputIdx3 = null;
+      if ((audioMode === 'music' || audioMode === 'both') && musicFile) {
+        const musicBytes = new Uint8Array(await musicFile.arrayBuffer());
+        await ffmpeg.writeFile('music.mp3', musicBytes);
+        args3.push('-stream_loop', '-1', '-i', 'music.mp3');
+        musicInputIdx3 = 1;
+      }
+
+      let finalAudioLabel = null;
+      let filterComplex3 = '';
       if (audioMode === 'mute') {
         finalAudioLabel = null;
-      } else if (audioMode === 'music' && musicInputIdx !== null) {
-        filterComplex += `[${musicInputIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
+      } else if (audioMode === 'music' && musicInputIdx3 !== null) {
+        filterComplex3 += `[${musicInputIdx3}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
         finalAudioLabel = 'amusic';
-      } else if (audioMode === 'both' && musicInputIdx !== null) {
-        filterComplex += `[${musicInputIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
-        filterComplex += `[${aOutRaw}][amusic]amix=inputs=2:duration=first:dropout_transition=0[amixed];`;
+      } else if (audioMode === 'both' && musicInputIdx3 !== null) {
+        filterComplex3 += `[${musicInputIdx3}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=PTS-STARTPTS[amusic];`;
+        filterComplex3 += `[0:a][amusic]amix=inputs=2:duration=first:dropout_transition=0[amixed];`;
         finalAudioLabel = 'amixed';
       } else {
-        finalAudioLabel = aOutRaw; // original (or music/both requested but no file uploaded — falls back to original)
+        finalAudioLabel = '0:a';
       }
-      // FOUND THE REAL RULE (confirmed via isolated testing, exact engine
-      // error message): "-vf/-af/-filter and -filter_complex cannot be used
-      // together for the same stream." Since the audio output stream is
-      // already fed by -filter_complex whenever there's more than one clip
-      // (or music mixing), the fade HAS to be applied as one more step
-      // *inside* that same graph — a separate -af on the output is simply
-      // illegal here, not just unreliable. This was the actual root cause
-      // behind every "matches no streams" / "No such filter" abort chased
-      // over the last several rounds.
-      // SAFETY NET: the exact combination of 3+ clips (double xfade/
-      // acrossfade chain) + drawtext + afade has been unreliable in testing
-      // in a way I haven't fully isolated yet. Rather than risk the whole
-      // generation aborting, skip the audio fade automatically in that
-      // specific heavy combo and tell the person why — everything else
-      // (clips, transitions, logo, text, filters) still goes through.
-      const activeTextCount = texts.filter(t => t.content.trim()).length;
-      const heavyComboRisk = clips.length >= 3 && activeTextCount > 0 && finalAudioLabel && (fadeIn > 0 || fadeOut > 0);
-      if (heavyComboRisk) {
-        console.warn('[aviso] Se omitió el fade de audio por una combinación pesada (3+ clips con texto) que resultó inestable en pruebas.');
-      }
-      if (!heavyComboRisk && finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
+      if (finalAudioLabel && (fadeIn > 0 || fadeOut > 0)) {
         const fadeOutStart = Math.max(0, totalDuration - fadeOut);
-        filterComplex += `[${finalAudioLabel}]afade=t=in:st=0:d=${fadeIn},afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOut}[afaded];`;
+        filterComplex3 += `[${finalAudioLabel}]afade=t=in:st=0:d=${fadeIn},afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOut}[afaded];`;
         finalAudioLabel = 'afaded';
       }
 
-      if (!filterComplex.endsWith(';')) filterComplex += ';';
-
-      window.__lastFilterComplex = filterComplex;
-      args.push('-filter_complex', filterComplex);
-      args.push('-map', `[${curLabel}]`);
+      args3.push('-map', '0:v', '-c:v', 'copy');
       if (finalAudioLabel) {
-        // finalAudioLabel is either a raw input stream specifier like "0:a"
-        // (single clip, original audio, no fade applied — never entered the
-        // filter graph at all) or a real filter-graph label like "afaded" /
-        // "amixed" / "a6" (multi-clip or fade was applied). -map needs
-        // brackets ONLY for the latter.
-        const isRawSpecifier = /^\d+:a$/.test(finalAudioLabel);
-        args.push('-map', isRawSpecifier ? finalAudioLabel : `[${finalAudioLabel}]`);
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
+        if (filterComplex3) {
+          if (!filterComplex3.endsWith(';')) filterComplex3 += ';';
+          args3.push('-filter_complex', filterComplex3);
+          const isRaw3 = /^\d+:a$/.test(finalAudioLabel);
+          args3.push('-map', isRaw3 ? finalAudioLabel : `[${finalAudioLabel}]`);
+        } else {
+          args3.push('-map', '0:a');
+        }
+        args3.push('-c:a', 'aac');
       } else {
-        args.push('-an');
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast');
+        args3.push('-an');
       }
-      args.push('out.mp4');
-      window.__lastArgs = args.slice();
-
-      progressText.textContent = 'Procesando...';
-      await ffmpeg.exec(args);
+      args3.push('out.mp4');
+      window.__lastArgsStep3 = args3.slice();
+      await ffmpeg.exec(args3);
+      try { await ffmpeg.deleteFile('step2.mp4'); } catch (e) {}
 
       const result = await ffmpeg.readFile('out.mp4');
       // IMPORTANT: use the Uint8Array itself, never `.buffer` — ffmpeg.wasm's
       // memory can grow while processing a real (larger) video, which
       // detaches any earlier raw ArrayBuffer reference and silently turns it
-      // into a 0-byte buffer. Blob([result]) always reads the correct bytes
-      // regardless of memory growth; Blob([result.buffer]) is what was
-      // producing the "0kb, no error" empty downloads on real phone videos.
+      // into a 0-byte buffer.
       if (!result || result.byteLength < 1000) {
         throw new Error('El video generado quedó vacío o corrupto (posible problema de memoria). Probá con menos clips o un video más corto.');
       }
-      // clean up the previous output from the engine's own virtual disk so a
-      // failed/older run can never linger around and get picked up by mistake
       try { await ffmpeg.deleteFile('out.mp4'); } catch (err) {}
 
       const blob = new Blob([result], { type: 'video/mp4' });
